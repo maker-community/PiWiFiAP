@@ -8,9 +8,35 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Templates\dnsmasq_conf.liquid" />
+    <None Remove="Templates\hostapd_conf.liquid" />
+    <None Remove="Templates\wifi_form.liquid" />
+    <None Remove="Templates\wifi_success.liquid" />
+    <None Remove="Templates\wpa_supplicant_conf.liquid" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Templates\dnsmasq_conf.liquid">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\hostapd_conf.liquid">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\wifi_form.liquid">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\wifi_success.liquid">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\wpa_supplicant_conf.liquid">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Fluid.Core" Version="2.24.0" />
     <PackageReference Include="Iot.Device.Bindings" Version="4.0.1" />
-    <PackageReference Include="SkiaSharp" Version="3.119.0" />
+    <PackageReference Include="SkiaSharp" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.116.1" />
     <PackageReference Include="ZXing.Net" Version="0.16.10" />
   </ItemGroup>
 

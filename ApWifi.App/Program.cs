@@ -37,7 +37,7 @@ if (!Utils.IsNetworkAvailable())
     StartAccessPoint(apIp);
 
     // 4. 启动本地Web服务器（用配置参数）
-    var url = $"http://{apIp}:{WebServerPort}";
+    var url = $"http://0.0.0.0:{WebServerPort}";
     var webHostTask = StartWebServer(url);
 
     // 5. 生成二维码并显示在屏幕
@@ -207,12 +207,12 @@ void ShowQrCodeOnDisplay(string url)
         bool hasDisplay = false;
         try
         {
-            var i2cDevices = Utils.RunCommand("ls /dev/i2c*");
-            hasDisplay = !string.IsNullOrEmpty(i2cDevices);
+            var i2cDevices = Utils.RunCommand("ls /dev/i2c* 2>/dev/null || echo ''");
+            hasDisplay = !string.IsNullOrEmpty(i2cDevices) && !i2cDevices.Contains("No such file");
             if (!hasDisplay)
             {
-                var spiDevices = Utils.RunCommand("ls /dev/spidev*");
-                hasDisplay = !string.IsNullOrEmpty(spiDevices);
+                var spiDevices = Utils.RunCommand("ls /dev/spidev* 2>/dev/null || echo ''");
+                hasDisplay = !string.IsNullOrEmpty(spiDevices) && !spiDevices.Contains("No such file");
             }
         }
         catch

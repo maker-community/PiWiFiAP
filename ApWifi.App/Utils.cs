@@ -65,7 +65,7 @@ namespace ApWifi.App
                 var psi = new ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    Arguments = $"-c '{command}'",
+                    Arguments = $"-c \"{command.Replace("\"", "\\\"")}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
