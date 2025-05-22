@@ -27,7 +27,7 @@ DeviceConfig LoadConfig()
 }
 
 // 1. 检查网络连接
-if (Utils.IsNetworkAvailable())
+if (!Utils.IsNetworkAvailable())
 {
     // 2. 获取主机IP作为AP热点IP（优先配置文件）
     string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
