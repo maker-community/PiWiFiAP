@@ -27,7 +27,7 @@ DeviceConfig LoadConfig()
 }
 
 // 1. 检查网络连接
-if (!Utils.IsNetworkAvailable())
+if(!Utils.IsNetworkAvailable())
 {
     // 2. 获取主机IP作为AP热点IP（优先配置文件）
     string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
@@ -112,7 +112,8 @@ async Task StartWebServer(string url)
             return Results.Content("<html><body><h1>错误</h1><p>WiFi名称不能为空</p><a href='/'>返回</a></body></html>", "text/html");
         }
         SaveWifiConfig(ssid, pwd);
-        ApplyWifiConfig();
+        //ApplyWifiConfig();
+       
         var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
         var parser = new FluidParser();
         if (!parser.TryParse(template, out var fluidTemplate, out var error))
@@ -124,7 +125,7 @@ async Task StartWebServer(string url)
         var html = await fluidTemplate.RenderAsync(context);
         _ = Task.Run(async () =>
         {
-            await Task.Delay(5000);
+            await Task.Delay(50000);
             Reboot();
         });
         return Results.Content(html, "text/html");
@@ -140,12 +141,16 @@ void SaveWifiConfig(string ssid, string pwd)
         Console.WriteLine("非Linux系统，跳过WiFi配置保存。");
         return;
     }
-    // 直接用nmcli保存WiFi配置
-    var ap = config.ApConfig;
-    var connectCmd = $"sudo nmcli device wifi connect '{ssid}' password '{pwd}' ifname {ap.Interface}";
-    var result = Utils.RunCommand(connectCmd);
-    Console.WriteLine(result);
-    Console.WriteLine("WiFi配置已保存");
+    Task.Run(() =>
+    {
+        // 直接用nmcli保存WiFi配置
+        var ap = config.ApConfig;
+        var connectCmd = $"sudo nmcli device wifi connect '{ssid}' password '{pwd}' ifname {ap.Interface}";
+        var result = Utils.RunCommand(connectCmd);
+        Console.WriteLine(result);
+        Console.WriteLine("WiFi配置已保存");
+    });
+   
 }
 
 void ApplyWifiConfig()
