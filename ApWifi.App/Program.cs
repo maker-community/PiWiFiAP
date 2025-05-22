@@ -78,19 +78,32 @@ void StartAccessPoint(string ip)
     dnsmasqContext.SetValue("ap", ap);
     dnsmasqContext.SetValue("dhcpStart", dhcpStart);
     dnsmasqContext.SetValue("dhcpEnd", dhcpEnd);
-    var dnsmasqConf = dnsmasqFluid.Render(dnsmasqContext);
-    // 写入临时配置文件
+    var dnsmasqConf = dnsmasqFluid.Render(dnsmasqContext);    // 写入临时配置文件
     File.WriteAllText("/tmp/hostapd.conf", hostapdConf);
     File.WriteAllText("/tmp/dnsmasq.conf", dnsmasqConf);
-    // 停止可能运行的服务
+    
+    // 停止可能运行的服务并确保相关进程被终止
     Utils.RunCommand($"sudo systemctl stop wpa_supplicant");
     //Utils.RunCommand($"sudo systemctl stop dnsmasq");
+    Utils.RunCommand($"sudo killall -9 dnsmasq 2>/dev/null || true");  // 强制终止所有dnsmasq进程
     Utils.RunCommand($"sudo systemctl stop hostapd");
+    Utils.RunCommand($"sudo killall -9 hostapd 2>/dev/null || true");  // 强制终止所有hostapd进程
+    
+    // 等待一段时间确保端口释放
+    Thread.Sleep(1000);
+    
     // 配置网络接口
     Utils.RunCommand($"sudo ifconfig {ap.Interface} {ip} up");
-    // 启动服务
-    Utils.RunCommand("sudo dnsmasq -C /tmp/dnsmasq.conf");
+      // 启动服务
+    Console.WriteLine("正在启动dnsmasq服务...");
+    if (!Utils.StartDnsmasq("/tmp/dnsmasq.conf"))
+    {
+        Console.WriteLine("警告: dnsmasq服务可能未正确启动，AP热点功能可能受限");
+    }
+    
+    Console.WriteLine("正在启动hostapd服务...");
     Utils.RunCommand("sudo hostapd /tmp/hostapd.conf -B");
+    Console.WriteLine($"AP热点已启动，IP地址: {ip}");
     Console.WriteLine($"AP热点已启动，IP地址: {ip}");
 }
 
@@ -177,9 +190,27 @@ void ApplyWifiConfig()
     }
     // 关闭AP，重启wpa_supplicant
     Console.WriteLine("应用WiFi配置...");
+    
+    // 停止所有相关服务
     Utils.RunCommand("sudo systemctl stop dnsmasq");
+    Utils.RunCommand("sudo killall -9 dnsmasq 2>/dev/null || true");
     Utils.RunCommand("sudo systemctl stop hostapd");
+    Utils.RunCommand("sudo killall -9 hostapd 2>/dev/null || true");
+    
+    // 确保wpa_supplicant被正确重启
+    Utils.RunCommand("sudo systemctl stop wpa_supplicant");
+    Utils.RunCommand("sudo killall -9 wpa_supplicant 2>/dev/null || true");
+    Thread.Sleep(1000);
+    
+    // 尝试使用多种方法重启无线网络
+    Console.WriteLine("重启无线网络...");
     Utils.RunCommand("sudo systemctl restart wpa_supplicant");
+    Utils.RunCommand("sudo wpa_cli -i wlan0 reconfigure 2>/dev/null || true");
+    
+    // 使用dhclient请求IP地址
+    Console.WriteLine("请求IP地址...");
+    Utils.RunCommand("sudo dhclient -r wlan0 2>/dev/null || true");
+    Utils.RunCommand("sudo dhclient wlan0 2>/dev/null || true");
 }
 
 void Reboot()

@@ -113,9 +113,71 @@ namespace ApWifi.App
             }
             using var image = SKImage.FromBitmap(bitmap);
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-            using var stream = File.OpenWrite("/tmp/wifi-setup-qr.png");
-            data.SaveTo(stream);
+            using var stream = File.OpenWrite("/tmp/wifi-setup-qr.png");            data.SaveTo(stream);
             Console.WriteLine("二维码已生成，请在屏幕查看或手动打开 /tmp/wifi-setup-qr.png");
+        }
+
+        public static bool IsPortInUse(int port)
+        {
+            try
+            {
+                // 使用命令行检查端口是否被占用
+                var result = RunCommand($"sudo lsof -i :{port}");
+                return !string.IsNullOrWhiteSpace(result);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool StartDnsmasq(string configPath, int maxRetries = 3)
+        {
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    // 确保先杀死所有dnsmasq进程
+                    RunCommand("sudo killall -9 dnsmasq 2>/dev/null || true");
+                    Thread.Sleep(1000); // 等待进程终止
+                    
+                    // 尝试启动dnsmasq
+                    var result = RunCommand($"sudo dnsmasq -C {configPath}");
+                    
+                    // 检查是否成功启动
+                    if (string.IsNullOrEmpty(result) || !result.Contains("failed"))
+                    {
+                        // 再次检查服务是否真的运行
+                        var checkResult = RunCommand("pidof dnsmasq");
+                        if (!string.IsNullOrEmpty(checkResult))
+                        {
+                            Console.WriteLine("dnsmasq服务成功启动");
+                            return true;
+                        }
+                    }
+                    
+                    Console.WriteLine($"尝试启动dnsmasq失败 (尝试 {i+1}/{maxRetries})，等待重试...");
+                    Thread.Sleep(2000); // 等待端口释放
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"启动dnsmasq时出错: {ex.Message}");
+                }
+            }
+            
+            Console.WriteLine("无法启动dnsmasq服务，尝试使用备选方法...");
+            try
+            {
+                // 备选方法：使用systemd启动
+                RunCommand("sudo systemctl restart dnsmasq");
+                Thread.Sleep(2000);
+                var checkResult = RunCommand("pidof dnsmasq");
+                return !string.IsNullOrEmpty(checkResult);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
