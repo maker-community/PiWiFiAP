@@ -33,15 +33,15 @@ if (!Utils.IsNetworkAvailable())
     string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
     Console.WriteLine($"使用IP地址 {apIp} 作为AP热点IP");
 
-    // 3. 启动AP热点（用配置参数）
-    StartAccessPoint(apIp);
-
     // 4. 启动本地Web服务器（用配置参数）
     var url = $"http://0.0.0.0:{WebServerPort}";
     var webHostTask = StartWebServer(url);
 
     // 5. 生成二维码并显示在屏幕
     ShowQrCodeOnDisplay(url);
+
+    // 3. 启动AP热点（用配置参数）
+    StartAccessPoint(apIp);
 
     // 6. 等待Web配置完成
     await webHostTask;
@@ -59,25 +59,30 @@ void StartAccessPoint(string ip)
         return;
     }
     var ap = config.ApConfig;
-    // 关闭 wlan0 相关连接，防止冲突
-    Utils.RunCommand($"sudo nmcli device disconnect {ap.Interface}");
-    Utils.RunCommand($"sudo nmcli device set {ap.Interface} managed no");
-    // 启动热点
-    var hotspotCmd = $"sudo nmcli device wifi hotspot ifname {ap.Interface} ssid '{ap.Ssid}' password '{ap.Password}'";
-    Console.WriteLine($"执行命令: {hotspotCmd}，请稍等...");
-    var result = Utils.RunCommand(hotspotCmd);
-    Console.WriteLine(result);
-    // 设置IP（nmcli hotspot 默认会分配IP，但如需自定义可用如下命令）
-    if (!string.IsNullOrWhiteSpace(ip) && ip != "192.168.8.1")
+    // 统一异步执行所有 nmcli 相关命令，防止主线程阻塞
+    Task.Run(() =>
     {
-        Utils.RunCommand($"sudo nmcli connection modify Hotspot ipv4.addresses {ip}/24 ipv4.method shared");
-        Utils.RunCommand($"sudo nmcli connection up Hotspot");
-    }
-    Console.WriteLine($"AP热点已启动，IP地址: {ip}");
+        // 关闭 wlan0 相关连接，防止冲突和阻塞
+        //Utils.RunCommand($"sudo nmcli --wait 0 device disconnect {ap.Interface}");
+        //Utils.RunCommand($"sudo nmcli device set {ap.Interface} managed no");
+        // 启动热点，使用 --wait 0 参数防止阻塞
+        var hotspotCmd = $"sudo nmcli --wait 0 device wifi hotspot ifname {ap.Interface} ssid '{ap.Ssid}' password '{ap.Password}'";
+        Console.WriteLine($"执行命令: {hotspotCmd}，请稍等...");
+        var result = Utils.RunCommand(hotspotCmd);
+        Console.WriteLine(result);
+        // 设置IP（nmcli hotspot 默认会分配IP，但如需自定义可用如下命令）
+        //if (!string.IsNullOrWhiteSpace(ip) && ip != "192.168.8.1")
+        //{
+        //    Utils.RunCommand($"sudo nmcli connection modify Hotspot ipv4.addresses {ip}/24 ipv4.method shared");
+        //    Utils.RunCommand($"sudo nmcli connection up Hotspot");
+        //}
+        Console.WriteLine($"AP热点已启动，IP地址: {ip}");
+    });
 }
 
 async Task StartWebServer(string url)
 {
+    Console.WriteLine($"正在启动Web服务器，监听地址: {url}");
     var builder = WebApplication.CreateBuilder();
     builder.WebHost.UseUrls(url);
     var app = builder.Build();
