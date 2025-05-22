@@ -84,7 +84,7 @@ void StartAccessPoint(string ip)
     File.WriteAllText("/tmp/dnsmasq.conf", dnsmasqConf);
     // 停止可能运行的服务
     Utils.RunCommand($"sudo systemctl stop wpa_supplicant");
-    Utils.RunCommand($"sudo systemctl stop dnsmasq");
+    //Utils.RunCommand($"sudo systemctl stop dnsmasq");
     Utils.RunCommand($"sudo systemctl stop hostapd");
     // 配置网络接口
     Utils.RunCommand($"sudo ifconfig {ap.Interface} {ip} up");
