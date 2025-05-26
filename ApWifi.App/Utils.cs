@@ -284,8 +284,7 @@ namespace ApWifi.App
             qrCodeImage.Dispose();
             return image;
         }
-        
-        /// <summary>
+          /// <summary>
         /// 获取热点网关IP地址，优先查找热点接口
         /// </summary>
         /// <param name="defaultIp">默认IP地址</param>
@@ -319,9 +318,12 @@ namespace ApWifi.App
                             if (addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                             {
                                 var ip = addr.Address.ToString();
-                                // 检查是否是常见的热点网段
-                                if (ip.StartsWith("192.168.4.") || ip.StartsWith("192.168.1.") || 
-                                    ip.StartsWith("10.0.0.") || ip.StartsWith("172."))
+                                // 检查是否与配置的AP网段匹配（优先检查192.168.4.x网段）
+                                if (ip.StartsWith("192.168.4.") || 
+                                    ip.StartsWith("192.168.1.") || 
+                                    ip.StartsWith("10.42.0.") ||   // nmcli默认网段
+                                    ip.StartsWith("10.0.0.") || 
+                                    ip.StartsWith("172."))
                                 {
                                     Console.WriteLine($"找到热点网关IP: {ip} (接口: {netInterface.Name})");
                                     return ip;

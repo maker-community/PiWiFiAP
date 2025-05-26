@@ -208,13 +208,16 @@ namespace ApWifi.App
             var result = await RunNmcliCommandAsync(statusCmd);
             
             return result.Success ? result.Output : "";
-        }
+        }    
+        
         /// <summary>
         /// 使用nmcli启动WiFi热点
         /// </summary>
         public async Task<bool> StartHotspotWithNmcliAsync(string ssid, string password)
         {
             Console.WriteLine($"正在使用nmcli启动WiFi热点: {ssid}");
+            Console.WriteLine($"使用配置的IP地址: {_config.ApConfig.Ip}");
+            Console.WriteLine($"使用配置的DHCP范围: {_config.ApConfig.DhcpStart} - {_config.ApConfig.DhcpEnd}");
 
             try
             {
@@ -238,17 +241,29 @@ namespace ApWifi.App
                     return false;
                 }
 
-                // 设置IP地址和掩码
+                // 设置IP地址和掩码（使用配置文件中的IP）
                 var ipCmd = $"connection modify {ssid} ipv4.addresses {_config.ApConfig.Ip}/24";
-                await RunNmcliCommandAsync(ipCmd);
+                var ipResult = await RunNmcliCommandAsync(ipCmd);
+                if (!ipResult.Success)
+                {
+                    Console.WriteLine($"设置IP地址失败: {ipResult.Error}");
+                }
 
                 // 设置为手动IP模式
                 var methodCmd = $"connection modify {ssid} ipv4.method manual";
-                await RunNmcliCommandAsync(methodCmd);
+                var methodResult = await RunNmcliCommandAsync(methodCmd);
+                if (!methodResult.Success)
+                {
+                    Console.WriteLine($"设置IP模式失败: {methodResult.Error}");
+                }
 
-                // 启用DHCP服务器
+                // 启用DHCP服务器（使用配置文件中的DHCP范围）
                 var dhcpCmd = $"connection modify {ssid} ipv4.dhcp-range \"{_config.ApConfig.DhcpStart},{_config.ApConfig.DhcpEnd}\"";
-                await RunNmcliCommandAsync(dhcpCmd);
+                var dhcpResult = await RunNmcliCommandAsync(dhcpCmd);
+                if (!dhcpResult.Success)
+                {
+                    Console.WriteLine($"设置DHCP范围失败: {dhcpResult.Error}");
+                }
 
                 // 重新应用配置
                 var upCmd = $"connection up {ssid}";
@@ -261,6 +276,7 @@ namespace ApWifi.App
                 }
 
                 Console.WriteLine($"WiFi热点启动成功: {ssid}");
+                Console.WriteLine($"热点IP: {_config.ApConfig.Ip}");
                 return true;
             }
             catch (Exception ex)

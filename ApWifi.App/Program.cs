@@ -42,9 +42,13 @@ DeviceConfig LoadConfig()
 // 1. 检查网络连接
 if (!await AsyncUtils.IsNetworkAvailableAsync())
 {
-    // 2. 获取主机IP作为AP热点IP（优先配置文件）
-    string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
-    Console.WriteLine($"预设热点IP地址: {apIp}");    // 3. 启动AP热点（用配置参数）
+    // 2. 获取AP热点IP（优先使用配置文件中的IP，若为空则使用默认值或自动检测）
+    string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? 
+                  config.ApConfig.Ip : 
+                  Utils.GetApIpAddress(DefaultApIp);
+    Console.WriteLine($"预设热点IP地址: {apIp}");
+    
+    // 3. 启动AP热点（使用配置参数）
     string actualApIp = await StartAccessPointAsync(apIp);
 
     // 4. 构建配网地址URL（使用实际的热点网关IP）
@@ -75,18 +79,26 @@ async Task<string> StartAccessPointAsync(string ip)
     }
 
     var ap = config.ApConfig;
-    Console.WriteLine($"正在启动AP热点: {ap.Ssid}，预设IP地址: {ip}");
+    Console.WriteLine($"正在启动AP热点: {ap.Ssid}");
+    Console.WriteLine($"配置的热点IP地址: {ap.Ip}");
+    Console.WriteLine($"配置的DHCP范围: {ap.DhcpStart} - {ap.DhcpEnd}");
 
-    // 使用NetworkManager启动热点
+    // 使用NetworkManager启动热点（会使用配置文件中的IP地址设置）
     var success = await networkManager.StartHotspotAsync(ap.Ssid, ap.Password);    
     if (success)
     {
         // 热点启动成功后，等待一小段时间让网络接口完全初始化
         await Task.Delay(2000);
         
-        // 重新获取实际的热点网关IP
+        // 重新获取实际的热点网关IP（应该与配置的IP一致）
         string actualIp = Utils.GetHotspotGatewayIp(ip);
         Console.WriteLine($"AP热点已启动，实际网关IP地址: {actualIp}");
+        
+        // 验证实际IP是否与配置IP一致
+        if (actualIp != ap.Ip && !string.IsNullOrWhiteSpace(ap.Ip))
+        {
+            Console.WriteLine($"警告：实际IP({actualIp})与配置IP({ap.Ip})不一致！");
+        }
         
         return actualIp;
     }
