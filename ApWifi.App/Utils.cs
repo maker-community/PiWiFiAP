@@ -91,17 +91,23 @@ namespace ApWifi.App
             };
             var pixelData = qrWriter.Write(url);
 
-            // 2. 创建二维码位图
-            using var bitmap = new SKBitmap(pixelData.Width, pixelData.Height, SKColorType.Gray8, SKAlphaType.Opaque);
-            var bytes = pixelData.Pixels;
+            // 2. 创建二维码位图 - 修复像素处理
+            using var bitmap = new SKBitmap(pixelData.Width, pixelData.Height);
+            var pixels = pixelData.Pixels;
+
+            // ZXing的pixelData.Pixels实际上是BGRA格式，每个像素4个字节
             for (int y = 0; y < pixelData.Height; y++)
             {
                 for (int x = 0; x < pixelData.Width; x++)
                 {
-                    byte v = bytes[y * pixelData.Width + x];
-                    bitmap.SetPixel(x, y, v == 0 ? SKColors.Black : SKColors.White);
+                    int offset = (y * pixelData.Width + x) * 4; // 4 bytes per pixel (BGRA)
+                    // 根据像素值设置为黑色或白色
+                    // ZXing生成的QR码通常是黑白的，0表示黑色，255表示白色
+                    byte pixelValue = pixels[offset]; // 取B通道值判断（BGR中任何一个通道都可以）
+                    bitmap.SetPixel(x, y, pixelValue == 0 ? SKColors.Black : SKColors.White);
                 }
             }
+
             using var image = SKImage.FromBitmap(bitmap);
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
 
@@ -123,18 +129,18 @@ namespace ApWifi.App
                 {
                     Process.Start(new ProcessStartInfo("explorer", $"\"{filePath}\"") { UseShellExecute = true });
                 }
-                else if (OperatingSystem.IsLinux())
-                {
-                    Process.Start("xdg-open", filePath);
-                }
-                else if (OperatingSystem.IsMacOS())
-                {
-                    Process.Start("open", filePath);
-                }
-                else
-                {
-                    Console.WriteLine($"二维码已生成，请手动打开 {filePath}");
-                }
+                //else if (OperatingSystem.IsLinux())
+                //{
+                //    Process.Start("xdg-open", filePath);
+                //}
+                //else if (OperatingSystem.IsMacOS())
+                //{
+                //    Process.Start("open", filePath);
+                //}
+                //else
+                //{
+                //    Console.WriteLine($"二维码已生成，请手动打开 {filePath}");
+                //}
             }
             catch
             {
