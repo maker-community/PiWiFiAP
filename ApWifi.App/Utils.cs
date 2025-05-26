@@ -9,9 +9,12 @@ using SkiaSharp;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.Fonts;
 
 namespace ApWifi.App
-{    public static class Utils
+{
+    public static class Utils
     {
         public static string GetApIpAddress(string defaultIp)
         {
@@ -195,6 +198,90 @@ namespace ApWifi.App
                     image[x, y] = color;
                 }
             }
+            return image;
+        }
+          /// <summary>
+        /// 创建包含二维码和IP地址文本的图像，适配指定尺寸的屏幕
+        /// </summary>
+        /// <param name="url">二维码URL</param>
+        /// <param name="ipAddress">IP地址文本</param>
+        /// <param name="width">目标图像宽度</param>
+        /// <param name="height">目标图像高度</param>
+        /// <returns>包含二维码和文本的图像</returns>
+        public static Image<Bgra32> CreateQrCodeWithTextImage(string url, string ipAddress, int width, int height)
+        {
+            // 创建目标图像
+            var image = new Image<Bgra32>(width, height);
+            
+            // 计算二维码大小 - 留出空间给文本
+            int textAreaHeight = Math.Min(30, height / 10); // 文本区域高度
+            int qrSize = Math.Min(width - 20, height - textAreaHeight - 20); // 二维码大小，留边距
+            
+            // 生成二维码
+            var qrCodeImage = GenerateQrCodeImage(url, qrSize);
+            
+            // 计算二维码位置（居中上部）
+            int qrX = (width - qrSize) / 2;
+            int qrY = 10; // 顶部边距
+            
+            // 填充白色背景
+            image.Mutate(ctx => ctx.Fill(Color.White));
+            
+            // 将二维码复制到目标图像上
+            for (int y = 0; y < qrCodeImage.Height && (qrY + y) < height; y++)
+            {
+                for (int x = 0; x < qrCodeImage.Width && (qrX + x) < width; x++)
+                {
+                    var pixel = qrCodeImage[x, y];
+                    if (qrX + x >= 0 && qrY + y >= 0)
+                    {
+                        image[qrX + x, qrY + y] = pixel;
+                    }
+                }
+            }
+              // 使用SkiaSharp绘制文本（作为后备方案）
+            try
+            {
+                using var bitmap = new SKBitmap(width, height);
+                using var canvas = new SKCanvas(bitmap);
+                
+                // 将ImageSharp图像转换为SKBitmap
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var pixel = image[x, y];
+                        bitmap.SetPixel(x, y, new SKColor(pixel.R, pixel.G, pixel.B, pixel.A));
+                    }
+                }
+                
+                // 绘制IP地址文本
+                using var font = new SKFont(SKTypeface.Default, Math.Min(16, textAreaHeight - 4));
+                using var paint = new SKPaint
+                {
+                    Color = SKColors.Black,
+                    IsAntialias = true
+                };
+                
+                int textY = qrY + qrSize + textAreaHeight / 2 + (int)(font.Size / 2);
+                canvas.DrawText(ipAddress, width / 2, textY, SKTextAlign.Center, font, paint);
+                
+                // 将结果转回ImageSharp
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var color = bitmap.GetPixel(x, y);
+                        image[x, y] = new Bgra32(color.Red, color.Green, color.Blue, color.Alpha);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"警告：无法绘制IP地址文本: {ex.Message}");
+            }
+            
+            qrCodeImage.Dispose();
             return image;
         }
     }

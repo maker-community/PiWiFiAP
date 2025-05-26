@@ -240,15 +240,20 @@ async Task ShowQrCodeOnDisplayAsync(string url)
 
         Console.WriteLine("正在初始化1.47寸显示器...");
         _st7789Display47 = new ST7789Display(settings2, _gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
-        Console.WriteLine("1.47寸显示器初始化完成");
-
-        // 清屏以准备播放动画 不清屏是不能写入数据的
+        Console.WriteLine("1.47寸显示器初始化完成");        // 清屏以准备播放动画 不清屏是不能写入数据的
         _st7789Display24.FillScreen(0x0000);  // 黑色
         _st7789Display47.FillScreen(0x0000);  // 黑色
 
-        var qrcodeImage = Utils.GenerateQrCodeImage(url);
+        // 获取当前IP地址用于显示
+        string currentIp = Utils.GetApIpAddress("192.168.4.1");
+        
+        // 为2.4寸屏幕(240x320)生成带文本的二维码图像（横屏模式：320x240）
+        var qrImage24 = Utils.CreateQrCodeWithTextImage(url, $"IP: {currentIp}", 320, 240);
+        
+        // 为1.47寸屏幕(172x320)生成带文本的二维码图像（横屏模式：320x172）
+        var qrImage47 = Utils.CreateQrCodeWithTextImage(url, $"IP: {currentIp}", 320, 172);
 
-        using Image<Bgr24> converted2inch4Image = qrcodeImage.CloneAs<Bgr24>();
+        using Image<Bgr24> converted2inch4Image = qrImage24.CloneAs<Bgr24>();
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -263,7 +268,7 @@ async Task ShowQrCodeOnDisplayAsync(string url)
             await Task.Delay(5); // 短暂延时确保传输完成
         }
 
-        using Image<Bgr24> converted1inch47Image = qrcodeImage.CloneAs<Bgr24>();
+        using Image<Bgr24> converted1inch47Image = qrImage47.CloneAs<Bgr24>();
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -274,6 +279,10 @@ async Task ShowQrCodeOnDisplayAsync(string url)
                 _st7789Display47?.SendData(data2);
             }
         }
+        
+        // 释放资源
+        qrImage24.Dispose();
+        qrImage47.Dispose();
         Console.WriteLine($"请访问 {url} 配置WiFi");
         Console.WriteLine("或扫描二维码连接配置网页");
     }

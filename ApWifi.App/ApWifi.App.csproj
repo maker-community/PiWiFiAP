@@ -28,6 +28,7 @@
     <PackageReference Include="Fluid.Core" Version="2.24.0" />
     <PackageReference Include="Iot.Device.Bindings" Version="4.0.1" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.6" />
     <PackageReference Include="SkiaSharp" Version="3.116.1" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.116.1" />
     <PackageReference Include="Verdure.Iot.Device" Version="1.0.6" />
