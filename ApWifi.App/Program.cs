@@ -44,17 +44,21 @@ if (!await AsyncUtils.IsNetworkAvailableAsync())
 {
     // 2. 获取主机IP作为AP热点IP（优先配置文件）
     string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
-    Console.WriteLine($"使用IP地址 {apIp} 作为AP热点IP");
+    Console.WriteLine($"预设热点IP地址: {apIp}");    // 3. 启动AP热点（用配置参数）
+    string actualApIp = await StartAccessPointAsync(apIp);
 
-    // 4. 启动本地Web服务器（用配置参数）
-    var url = $"http://0.0.0.0:{WebServerPort}";
-    var webHostTask = StartWebServer(url);
+    // 4. 构建配网地址URL（使用实际的热点网关IP）
+    var configUrl = $"http://{actualApIp}:{WebServerPort}";
+    Console.WriteLine($"实际配网地址: {configUrl}");
 
-    // 5. 生成二维码并显示在屏幕
-    await ShowQrCodeOnDisplayAsync(url);    // 3. 启动AP热点（用配置参数）
-    await StartAccessPointAsync(apIp);
+    // 5. 启动本地Web服务器（监听所有接口）
+    var serverUrl = $"http://0.0.0.0:{WebServerPort}";
+    var webHostTask = StartWebServer(serverUrl);
 
-    // 6. 等待Web配置完成
+    // 6. 生成二维码并显示在屏幕（使用实际配网地址）
+    await ShowQrCodeOnDisplayAsync(configUrl, actualApIp);
+
+    // 7. 等待Web配置完成
     await webHostTask;
 }
 else
@@ -62,27 +66,34 @@ else
     Console.WriteLine("已连接到网络，无需配置。");
 }
 
-async Task StartAccessPointAsync(string ip)
+async Task<string> StartAccessPointAsync(string ip)
 {
     if (!OperatingSystem.IsLinux())
     {
         Console.WriteLine("非Linux系统，跳过AP热点启动。");
-        return;
+        return ip; // 返回预设IP
     }
 
     var ap = config.ApConfig;
-    Console.WriteLine($"正在启动AP热点: {ap.Ssid}，IP地址: {ip}");
+    Console.WriteLine($"正在启动AP热点: {ap.Ssid}，预设IP地址: {ip}");
 
     // 使用NetworkManager启动热点
-    var success = await networkManager.StartHotspotAsync(ap.Ssid, ap.Password);
-
+    var success = await networkManager.StartHotspotAsync(ap.Ssid, ap.Password);    
     if (success)
     {
-        Console.WriteLine($"AP热点已启动，IP地址: {ip}");
+        // 热点启动成功后，等待一小段时间让网络接口完全初始化
+        await Task.Delay(2000);
+        
+        // 重新获取实际的热点网关IP
+        string actualIp = Utils.GetHotspotGatewayIp(ip);
+        Console.WriteLine($"AP热点已启动，实际网关IP地址: {actualIp}");
+        
+        return actualIp;
     }
     else
     {
         Console.WriteLine("AP热点启动失败");
+        return ip; // 启动失败时返回预设IP作为备用
     }
 }
 
@@ -181,16 +192,17 @@ async Task RebootAsync()
     await AsyncUtils.RebootAsync();
 }
 
-async Task ShowQrCodeOnDisplayAsync(string url)
-{
-    if (!OperatingSystem.IsLinux())
+async Task ShowQrCodeOnDisplayAsync(string url, string gatewayIp)
+{    if (!OperatingSystem.IsLinux())
     {
         Console.WriteLine("非Linux系统，跳过二维码显示，仅生成二维码图片。");
-        var qrcodeImage = Utils.GenerateQrCodeImage(url);
+        var qrcodeImage = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 400, 400);
         // 保存生成的二维码图片到本地文件
         var qrCodeFilePath = Path.Combine(Directory.GetCurrentDirectory(), "qrcode.png");
         qrcodeImage.Save(qrCodeFilePath);
         Console.WriteLine($"二维码图片已保存到: {qrCodeFilePath}");
+        Console.WriteLine($"配网地址: {url}");
+        Console.WriteLine($"网关IP: {gatewayIp}");
 
         //Utils.ShowQrCode(url);
         return;
@@ -244,14 +256,15 @@ async Task ShowQrCodeOnDisplayAsync(string url)
         _st7789Display24.FillScreen(0x0000);  // 黑色
         _st7789Display47.FillScreen(0x0000);  // 黑色
 
-        // 获取当前IP地址用于显示
-        string currentIp = Utils.GetApIpAddress("192.168.4.1");
+        // 使用传入的网关IP作为显示IP
+        Console.WriteLine($"在屏幕上显示配网地址: {url}");
+        Console.WriteLine($"网关IP: {gatewayIp}");
         
         // 为2.4寸屏幕(240x320)生成带文本的二维码图像（横屏模式：320x240）
-        var qrImage24 = Utils.CreateQrCodeWithTextImage(url, $"IP: {currentIp}", 320, 240);
+        var qrImage24 = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 320, 240);
         
         // 为1.47寸屏幕(172x320)生成带文本的二维码图像（横屏模式：320x172）
-        var qrImage47 = Utils.CreateQrCodeWithTextImage(url, $"IP: {currentIp}", 320, 172);
+        var qrImage47 = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 320, 172);
 
         using Image<Bgr24> converted2inch4Image = qrImage24.CloneAs<Bgr24>();
 
@@ -279,12 +292,12 @@ async Task ShowQrCodeOnDisplayAsync(string url)
                 _st7789Display47?.SendData(data2);
             }
         }
-        
-        // 释放资源
+          // 释放资源
         qrImage24.Dispose();
         qrImage47.Dispose();
         Console.WriteLine($"请访问 {url} 配置WiFi");
-        Console.WriteLine("或扫描二维码连接配置网页");
+        Console.WriteLine($"或直接访问网关IP: {gatewayIp}:{WebServerPort}");
+        Console.WriteLine("或扫描屏幕上的二维码连接配置网页");
     }
     catch (Exception ex)
     {

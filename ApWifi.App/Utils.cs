@@ -284,5 +284,61 @@ namespace ApWifi.App
             qrCodeImage.Dispose();
             return image;
         }
+        
+        /// <summary>
+        /// 获取热点网关IP地址，优先查找热点接口
+        /// </summary>
+        /// <param name="defaultIp">默认IP地址</param>
+        /// <returns>热点网关IP地址</returns>
+        public static string GetHotspotGatewayIp(string defaultIp)
+        {
+            try
+            {
+                NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+                
+                // 首先尝试找到热点相关的接口
+                foreach (NetworkInterface netInterface in networkInterfaces)
+                {
+                    if (netInterface.OperationalStatus != OperationalStatus.Up)
+                        continue;
+                    if (netInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                        continue;
+                    
+                    // 查找可能是热点的接口（通常是wlan0、ap0等）
+                    string interfaceName = netInterface.Name.ToLower();
+                    bool isHotspotInterface = interfaceName.Contains("wlan") || 
+                                            interfaceName.Contains("ap") ||
+                                            interfaceName.Contains("hotspot") ||
+                                            interfaceName.Contains("wireless");
+                    
+                    if (isHotspotInterface)
+                    {
+                        IPInterfaceProperties ipProps = netInterface.GetIPProperties();
+                        foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
+                        {
+                            if (addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                            {
+                                var ip = addr.Address.ToString();
+                                // 检查是否是常见的热点网段
+                                if (ip.StartsWith("192.168.4.") || ip.StartsWith("192.168.1.") || 
+                                    ip.StartsWith("10.0.0.") || ip.StartsWith("172."))
+                                {
+                                    Console.WriteLine($"找到热点网关IP: {ip} (接口: {netInterface.Name})");
+                                    return ip;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 如果没有找到明确的热点接口，回退到原方法
+                return GetApIpAddress(defaultIp);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"获取热点网关IP时出错: {ex.Message}");
+                return defaultIp;
+            }
+        }
     }
 }
