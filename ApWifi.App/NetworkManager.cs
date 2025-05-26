@@ -105,132 +105,15 @@ namespace ApWifi.App
         }
         
         /// <summary>
-        /// 启动WiFi热点 (使用 hostapd + dnsmasq)
+        /// 启动WiFi热点 (仅使用 nmcli)
         /// </summary>
         public async Task<bool> StartHotspotAsync(string ssid, string password)
         {
-            Console.WriteLine($"正在启动WiFi热点: {ssid}");
-            
-            try
-            {
-                // 先断开当前连接
-                await DisconnectDeviceAsync();
-                
-                // 设置设备为非管理状态
-                await SetDeviceManagedAsync(false);
-                
-                // 生成hostapd配置文件
-                var hostapd_success = await GenerateHostapdConfigAsync(ssid, password);
-                if (!hostapd_success)
-                {
-                    Console.WriteLine("生成hostapd配置失败");
-                    return false;
-                }
-                
-                // 生成dnsmasq配置文件
-                var dnsmasq_success = await GenerateDnsmasqConfigAsync();
-                if (!dnsmasq_success)
-                {
-                    Console.WriteLine("生成dnsmasq配置失败");
-                    return false;
-                }
-                
-                // 启动hostapd
-                var hostapd_result = await AsyncUtils.RunCommandAsync("sudo hostapd -B /tmp/hostapd.conf");
-                if (!hostapd_result.Success)
-                {
-                    Console.WriteLine($"启动hostapd失败: {hostapd_result.Error}");
-                    return false;
-                }
-                
-                // 配置IP地址
-                var ip_result = await AsyncUtils.RunCommandAsync($"sudo ip addr add {_config.ApConfig.Ip}/24 dev {_interface}");
-                if (!ip_result.Success)
-                {
-                    Console.WriteLine($"配置IP地址失败: {ip_result.Error}");
-                }
-                
-                // 启动dnsmasq
-                var dnsmasq_result = Utils.StartDnsmasq("/tmp/dnsmasq.conf");
-                if (!dnsmasq_result)
-                {
-                    Console.WriteLine("启动dnsmasq失败");
-                    return false;
-                }
-                
-                Console.WriteLine($"WiFi热点启动成功: {ssid}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"启动WiFi热点时出错: {ex.Message}");
-                return false;
-            }
+            // 直接调用 nmcli 方式
+            return await StartHotspotWithNmcliAsync(ssid, password);
         }
-        
+
         /// <summary>
-        /// 生成hostapd配置文件
-        /// </summary>
-        private async Task<bool> GenerateHostapdConfigAsync(string ssid, string password)
-        {
-            try
-            {
-                var template = await File.ReadAllTextAsync("Templates/hostapd_conf.liquid");
-                var parser = new FluidParser();
-                
-                if (!parser.TryParse(template, out var fluidTemplate, out var error))
-                {
-                    Console.WriteLine($"hostapd模板解析错误: {error}");
-                    return false;
-                }
-                
-                var context = new TemplateContext();
-                context.SetValue("ap", _config.ApConfig);
-                
-                var config = await fluidTemplate.RenderAsync(context);
-                await File.WriteAllTextAsync("/tmp/hostapd.conf", config);
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"生成hostapd配置时出错: {ex.Message}");
-                return false;
-            }
-        }
-        
-        /// <summary>
-        /// 生成dnsmasq配置文件
-        /// </summary>
-        private async Task<bool> GenerateDnsmasqConfigAsync()
-        {
-            try
-            {
-                var template = await File.ReadAllTextAsync("Templates/dnsmasq_conf.liquid");
-                var parser = new FluidParser();
-                
-                if (!parser.TryParse(template, out var fluidTemplate, out var error))
-                {
-                    Console.WriteLine($"dnsmasq模板解析错误: {error}");
-                    return false;
-                }
-                
-                var context = new TemplateContext();
-                context.SetValue("ap", _config.ApConfig);
-                context.SetValue("dhcpStart", _config.ApConfig.DhcpStart);
-                context.SetValue("dhcpEnd", _config.ApConfig.DhcpEnd);
-                
-                var config = await fluidTemplate.RenderAsync(context);
-                await File.WriteAllTextAsync("/tmp/dnsmasq.conf", config);
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"生成dnsmasq配置时出错: {ex.Message}");
-                return false;
-            }
-        }        /// <summary>
         /// 连接到WiFi网络
         /// </summary>
         public async Task<bool> ConnectToWifiAsync(string ssid, string password)
@@ -252,7 +135,9 @@ namespace ApWifi.App
             }
             
             return result.Success;
-        }/// <summary>
+        }
+        
+        /// <summary>
         /// 断开设备连接
         /// </summary>
         public async Task<bool> DisconnectDeviceAsync()
@@ -263,35 +148,15 @@ namespace ApWifi.App
             var result = await RunNmcliCommandAsync(disconnectCmd);
             
             return result.Success;
-        }        /// <summary>
-        /// 关闭热点连接
+        }        
+        
+        /// <summary>
+        /// 关闭热点连接 (仅使用 nmcli)
         /// </summary>
         public async Task<bool> StopHotspotAsync()
         {
-            Console.WriteLine("正在关闭热点连接");
-            
-            try
-            {
-                // 停止dnsmasq
-                var dnsmasq_result = await AsyncUtils.RunCommandAsync("sudo killall -9 dnsmasq 2>/dev/null || true");
-                
-                // 停止hostapd
-                var hostapd_result = await AsyncUtils.RunCommandAsync("sudo killall -9 hostapd 2>/dev/null || true");
-                
-                // 清除IP地址
-                var ip_result = await AsyncUtils.RunCommandAsync($"sudo ip addr flush dev {_interface}");
-                
-                // 恢复设备管理状态
-                await SetDeviceManagedAsync(true);
-                
-                Console.WriteLine("热点已关闭");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"关闭热点时出错: {ex.Message}");
-                return false;
-            }
+            // 直接调用 nmcli 方式，使用配置的热点名
+            return await StopHotspotWithNmcliAsync(_config.ApConfig.Ssid);
         }
 
         /// <summary>
@@ -343,6 +208,124 @@ namespace ApWifi.App
             var result = await RunNmcliCommandAsync(statusCmd);
             
             return result.Success ? result.Output : "";
+        }
+        /// <summary>
+        /// 使用nmcli启动WiFi热点
+        /// </summary>
+        public async Task<bool> StartHotspotWithNmcliAsync(string ssid, string password)
+        {
+            Console.WriteLine($"正在使用nmcli启动WiFi热点: {ssid}");
+
+            try
+            {
+                // 停止任何可能正在运行的热点
+                await StopHotspotAsync();
+
+                // 确保设备被NetworkManager管理
+                await SetDeviceManagedAsync(true);
+
+                // 删除可能存在的相同名称的连接
+                var deleteCmd = $"connection delete {ssid}";
+                await RunNmcliCommandAsync(deleteCmd);
+
+                // 创建新的热点连接
+                var createHotspotCmd = $"device wifi hotspot ifname {_interface} con-name {ssid} ssid \"{ssid}\" password \"{password}\"";
+                var result = await RunNmcliCommandAsync(createHotspotCmd);
+
+                if (!result.Success)
+                {
+                    Console.WriteLine($"创建WiFi热点失败: {result.Error}");
+                    return false;
+                }
+
+                // 设置IP地址和掩码
+                var ipCmd = $"connection modify {ssid} ipv4.addresses {_config.ApConfig.Ip}/24";
+                await RunNmcliCommandAsync(ipCmd);
+
+                // 设置为手动IP模式
+                var methodCmd = $"connection modify {ssid} ipv4.method manual";
+                await RunNmcliCommandAsync(methodCmd);
+
+                // 启用DHCP服务器
+                var dhcpCmd = $"connection modify {ssid} ipv4.dhcp-range \"{_config.ApConfig.DhcpStart},{_config.ApConfig.DhcpEnd}\"";
+                await RunNmcliCommandAsync(dhcpCmd);
+
+                // 重新应用配置
+                var upCmd = $"connection up {ssid}";
+                var upResult = await RunNmcliCommandAsync(upCmd);
+
+                if (!upResult.Success)
+                {
+                    Console.WriteLine($"启动WiFi热点失败: {upResult.Error}");
+                    return false;
+                }
+
+                Console.WriteLine($"WiFi热点启动成功: {ssid}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"启动WiFi热点时出错: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 使用nmcli关闭WiFi热点
+        /// </summary>
+        public async Task<bool> StopHotspotWithNmcliAsync(string ssid)
+        {
+            Console.WriteLine($"正在关闭nmcli WiFi热点: {ssid}");
+
+            try
+            {
+                // 关闭连接
+                var downCmd = $"connection down {ssid}";
+                await RunNmcliCommandAsync(downCmd);
+
+                // 删除连接
+                var deleteCmd = $"connection delete {ssid}";
+                var result = await RunNmcliCommandAsync(deleteCmd);
+
+                if (!result.Success)
+                {
+                    Console.WriteLine($"关闭WiFi热点失败: {result.Error}");
+                    return false;
+                }
+
+                Console.WriteLine("WiFi热点已关闭");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"关闭WiFi热点时出错: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 检查WiFi热点是否正在运行
+        /// </summary>
+        public async Task<bool> IsHotspotRunningAsync(string ssid)
+        {
+            var checkCmd = $"connection show {ssid}";
+            var result = await RunNmcliCommandAsync(checkCmd);
+
+            if (!result.Success)
+            {
+                return false;
+            }
+
+            // 检查连接是否处于活动状态
+            var activeCmd = $"connection show --active";
+            var activeResult = await RunNmcliCommandAsync(activeCmd);
+
+            if (!activeResult.Success)
+            {
+                return false;
+            }
+
+            return activeResult.Output.Contains(ssid);
         }
     }
 
