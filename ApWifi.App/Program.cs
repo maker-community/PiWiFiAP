@@ -1,5 +1,12 @@
 using ApWifi.App;
 using Fluid;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using System.Device.Gpio;
+using System.Device.Spi;
+using System.Runtime.InteropServices;
+using Verdure.Iot.Device;
 
 // 默认AP热点IP
 const string DefaultApIp = "192.168.4.1";
@@ -7,7 +14,12 @@ const string DefaultApIp = "192.168.4.1";
 const int WebServerPort = 5000;
 
 DeviceConfig config = LoadConfig();
-NetworkManager networkManager = new NetworkManager(config);
+NetworkManager networkManager = new(config);
+
+ST7789Display? _st7789Display24;
+ST7789Display? _st7789Display47;
+
+GpioController? _gpioController;
 
 DeviceConfig LoadConfig()
 {
@@ -28,7 +40,7 @@ DeviceConfig LoadConfig()
 }
 
 // 1. 检查网络连接
-if(!await AsyncUtils.IsNetworkAvailableAsync())
+if (!await AsyncUtils.IsNetworkAvailableAsync())
 {
     // 2. 获取主机IP作为AP热点IP（优先配置文件）
     string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
@@ -39,7 +51,7 @@ if(!await AsyncUtils.IsNetworkAvailableAsync())
     var webHostTask = StartWebServer(url);
 
     // 5. 生成二维码并显示在屏幕
-    ShowQrCodeOnDisplay(url);    // 3. 启动AP热点（用配置参数）
+    await ShowQrCodeOnDisplayAsync(url);    // 3. 启动AP热点（用配置参数）
     await StartAccessPointAsync(apIp);
 
     // 6. 等待Web配置完成
@@ -57,13 +69,13 @@ async Task StartAccessPointAsync(string ip)
         Console.WriteLine("非Linux系统，跳过AP热点启动。");
         return;
     }
-    
+
     var ap = config.ApConfig;
     Console.WriteLine($"正在启动AP热点: {ap.Ssid}，IP地址: {ip}");
-    
+
     // 使用NetworkManager启动热点
     var success = await networkManager.StartHotspotAsync(ap.Ssid, ap.Password);
-    
+
     if (success)
     {
         Console.WriteLine($"AP热点已启动，IP地址: {ip}");
@@ -103,10 +115,11 @@ async Task StartWebServer(string url)
         var pwd = form["pwd"].ToString();
         if (string.IsNullOrEmpty(ssid))
         {
-            return Results.Content("<html><body><h1>错误</h1><p>WiFi名称不能为空</p><a href='/'>返回</a></body></html>", "text/html");        }
+            return Results.Content("<html><body><h1>错误</h1><p>WiFi名称不能为空</p><a href='/'>返回</a></body></html>", "text/html");
+        }
         await SaveWifiConfigAsync(ssid, pwd);
         //ApplyWifiConfig();
-       
+
         var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
         var parser = new FluidParser();
         if (!parser.TryParse(template, out var fluidTemplate, out var error))
@@ -115,7 +128,7 @@ async Task StartWebServer(string url)
         }
         var context = new TemplateContext();
         context.SetValue("ssid", ssid);
-        var html = await fluidTemplate.RenderAsync(context);        
+        var html = await fluidTemplate.RenderAsync(context);
         _ = Task.Run(async () =>
         {
             await Task.Delay(50000);
@@ -134,19 +147,19 @@ async Task SaveWifiConfigAsync(string ssid, string pwd)
         Console.WriteLine("非Linux系统，跳过WiFi配置保存。");
         return;
     }
-    
+
     Console.WriteLine("正在保存WiFi配置...");
-    
+
     // 关闭热点，恢复接口管理
     await networkManager.StopHotspotAsync();
     await networkManager.SetDeviceManagedAsync(true);
-    
+
     // 启动WiFi连接
     await networkManager.ConnectDeviceAsync();
-    
+
     // 使用NetworkManager连接WiFi
     var success = await networkManager.ConnectToWifiAsync(ssid, pwd);
-    
+
     if (success)
     {
         Console.WriteLine("WiFi配置已保存并连接成功");
@@ -168,12 +181,18 @@ async Task RebootAsync()
     await AsyncUtils.RebootAsync();
 }
 
-void ShowQrCodeOnDisplay(string url)
+async Task ShowQrCodeOnDisplayAsync(string url)
 {
     if (!OperatingSystem.IsLinux())
     {
         Console.WriteLine("非Linux系统，跳过二维码显示，仅生成二维码图片。");
-        Utils.ShowQrCode(url);
+        var qrcodeImage = Utils.GenerateQrCodeImage(url);
+        // 保存生成的二维码图片到本地文件
+        var qrCodeFilePath = Path.Combine(Directory.GetCurrentDirectory(), "qrcode.png");
+        qrcodeImage.Save(qrCodeFilePath);
+        Console.WriteLine($"二维码图片已保存到: {qrCodeFilePath}");
+
+        //Utils.ShowQrCode(url);
         return;
     }
     try
@@ -200,7 +219,61 @@ void ShowQrCodeOnDisplay(string url)
             Utils.ShowQrCode(url);
             return;
         }
-        Utils.ShowQrCode(url);
+
+        _gpioController = new GpioController();
+
+        var settings1 = new SpiConnectionSettings(0, 0)
+        {
+            ClockFrequency = 24_000_000, // 尝试降低SPI时钟频率以减少闪烁
+            Mode = SpiMode.Mode0,
+        };
+
+        var settings2 = new SpiConnectionSettings(0, 1)
+        {
+            ClockFrequency = 24_000_000,
+            Mode = SpiMode.Mode0,
+        };
+
+        Console.WriteLine("正在初始化2.4寸显示器...");
+        _st7789Display24 = new ST7789Display(settings1, _gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
+        Console.WriteLine("2.4寸显示器初始化完成");
+
+        Console.WriteLine("正在初始化1.47寸显示器...");
+        _st7789Display47 = new ST7789Display(settings2, _gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
+        Console.WriteLine("1.47寸显示器初始化完成");
+
+        // 清屏以准备播放动画 不清屏是不能写入数据的
+        _st7789Display24.FillScreen(0x0000);  // 黑色
+        _st7789Display47.FillScreen(0x0000);  // 黑色
+
+        var qrcodeImage = Utils.GenerateQrCodeImage(url);
+
+        using Image<Bgr24> converted2inch4Image = qrcodeImage.CloneAs<Bgr24>();
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            converted2inch4Image.Mutate(x => x.Rotate(90));
+            var data1 = _st7789Display24?.GetImageBytes(converted2inch4Image);
+
+            if (data1 != null)
+            {
+                _st7789Display24?.SendData(data1);
+            }
+
+            await Task.Delay(5); // 短暂延时确保传输完成
+        }
+
+        using Image<Bgr24> converted1inch47Image = qrcodeImage.CloneAs<Bgr24>();
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            converted1inch47Image.Mutate(x => x.Rotate(90));
+            var data2 = _st7789Display47?.GetImageBytes(converted1inch47Image);
+            if (data2 != null)
+            {
+                _st7789Display47?.SendData(data2);
+            }
+        }
         Console.WriteLine($"请访问 {url} 配置WiFi");
         Console.WriteLine("或扫描二维码连接配置网页");
     }

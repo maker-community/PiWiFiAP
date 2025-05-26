@@ -6,6 +6,9 @@ using System.Net.NetworkInformation;
 using ZXing;
 using ZXing.QrCode;
 using SkiaSharp;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace ApWifi.App
 {    public static class Utils
@@ -164,5 +167,35 @@ namespace ApWifi.App
                 return false;
             }
         }   
+          /// <summary>
+        /// 使用 ZXing.Net + ImageSharp 生成二维码，返回 ImageSharp.Image 类型
+        /// </summary>
+        public static Image<Bgra32> GenerateQrCodeImage(string text, int size = 400)
+        {
+            var writer = new BarcodeWriterPixelData
+            {
+                Format = BarcodeFormat.QR_CODE,
+                Options = new QrCodeEncodingOptions
+                {
+                    Height = size,
+                    Width = size,
+                    Margin = 1
+                }
+            };
+            var pixelData = writer.Write(text);
+            // 创建ImageSharp BGRA32图像
+            var image = new Image<Bgra32>(pixelData.Width, pixelData.Height);
+            for (int y = 0; y < pixelData.Height; y++)
+            {
+                for (int x = 0; x < pixelData.Width; x++)
+                {
+                    // ZXing的像素数据是BGRA，二维码只有黑白，取B通道判断
+                    byte b = pixelData.Pixels[(y * pixelData.Width + x) * 4];
+                    var color = b == 0 ? new Bgra32(0, 0, 0, 255) : new Bgra32(255, 255, 255, 255);
+                    image[x, y] = color;
+                }
+            }
+            return image;
+        }
     }
 }
