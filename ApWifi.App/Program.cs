@@ -7,6 +7,7 @@ const string DefaultApIp = "192.168.4.1";
 const int WebServerPort = 5000;
 
 DeviceConfig config = LoadConfig();
+NetworkManager networkManager = new NetworkManager(config);
 
 DeviceConfig LoadConfig()
 {
@@ -27,7 +28,7 @@ DeviceConfig LoadConfig()
 }
 
 // 1. 检查网络连接
-if(!Utils.IsNetworkAvailable())
+if(!await AsyncUtils.IsNetworkAvailableAsync())
 {
     // 2. 获取主机IP作为AP热点IP（优先配置文件）
     string apIp = !string.IsNullOrWhiteSpace(config.ApConfig.Ip) ? config.ApConfig.Ip : Utils.GetApIpAddress(DefaultApIp);
@@ -38,10 +39,8 @@ if(!Utils.IsNetworkAvailable())
     var webHostTask = StartWebServer(url);
 
     // 5. 生成二维码并显示在屏幕
-    ShowQrCodeOnDisplay(url);
-
-    // 3. 启动AP热点（用配置参数）
-    StartAccessPoint(apIp);
+    ShowQrCodeOnDisplay(url);    // 3. 启动AP热点（用配置参数）
+    await StartAccessPointAsync(apIp);
 
     // 6. 等待Web配置完成
     await webHostTask;
@@ -51,33 +50,28 @@ else
     Console.WriteLine("已连接到网络，无需配置。");
 }
 
-void StartAccessPoint(string ip)
+async Task StartAccessPointAsync(string ip)
 {
     if (!OperatingSystem.IsLinux())
     {
         Console.WriteLine("非Linux系统，跳过AP热点启动。");
         return;
     }
+    
     var ap = config.ApConfig;
-    // 统一异步执行所有 nmcli 相关命令，防止主线程阻塞
-    Task.Run(() =>
+    Console.WriteLine($"正在启动AP热点: {ap.Ssid}，IP地址: {ip}");
+    
+    // 使用NetworkManager启动热点
+    var success = await networkManager.StartHotspotAsync(ap.Ssid, ap.Password);
+    
+    if (success)
     {
-        // 关闭 wlan0 相关连接，防止冲突和阻塞
-        //Utils.RunCommand($"sudo nmcli --wait 0 device disconnect {ap.Interface}");
-        //Utils.RunCommand($"sudo nmcli device set {ap.Interface} managed no");
-        // 启动热点，使用 --wait 0 参数防止阻塞
-        var hotspotCmd = $"sudo nmcli --wait 0 device wifi hotspot ifname {ap.Interface} ssid '{ap.Ssid}' password '{ap.Password}'";
-        Console.WriteLine($"执行命令: {hotspotCmd}，请稍等...");
-        var result = Utils.RunCommand(hotspotCmd);
-        Console.WriteLine(result);
-        // 设置IP（nmcli hotspot 默认会分配IP，但如需自定义可用如下命令）
-        //if (!string.IsNullOrWhiteSpace(ip) && ip != "192.168.8.1")
-        //{
-        //    Utils.RunCommand($"sudo nmcli connection modify Hotspot ipv4.addresses {ip}/24 ipv4.method shared");
-        //    Utils.RunCommand($"sudo nmcli connection up Hotspot");
-        //}
         Console.WriteLine($"AP热点已启动，IP地址: {ip}");
-    });
+    }
+    else
+    {
+        Console.WriteLine("AP热点启动失败");
+    }
 }
 
 async Task StartWebServer(string url)
@@ -109,9 +103,8 @@ async Task StartWebServer(string url)
         var pwd = form["pwd"].ToString();
         if (string.IsNullOrEmpty(ssid))
         {
-            return Results.Content("<html><body><h1>错误</h1><p>WiFi名称不能为空</p><a href='/'>返回</a></body></html>", "text/html");
-        }
-        SaveWifiConfig(ssid, pwd);
+            return Results.Content("<html><body><h1>错误</h1><p>WiFi名称不能为空</p><a href='/'>返回</a></body></html>", "text/html");        }
+        await SaveWifiConfigAsync(ssid, pwd);
         //ApplyWifiConfig();
        
         var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
@@ -122,11 +115,11 @@ async Task StartWebServer(string url)
         }
         var context = new TemplateContext();
         context.SetValue("ssid", ssid);
-        var html = await fluidTemplate.RenderAsync(context);
+        var html = await fluidTemplate.RenderAsync(context);        
         _ = Task.Run(async () =>
         {
             await Task.Delay(50000);
-            Reboot();
+            await RebootAsync();
         });
         return Results.Content(html, "text/html");
     });
@@ -134,42 +127,37 @@ async Task StartWebServer(string url)
     await app.RunAsync();
 }
 
-void SaveWifiConfig(string ssid, string pwd)
+async Task SaveWifiConfigAsync(string ssid, string pwd)
 {
     if (!OperatingSystem.IsLinux())
     {
         Console.WriteLine("非Linux系统，跳过WiFi配置保存。");
         return;
     }
-    Task.Run(() =>
-    {
-        // 直接用nmcli保存WiFi配置
-        var ap = config.ApConfig;
-        var connectCmd = $"sudo nmcli device wifi connect '{ssid}' password '{pwd}' ifname {ap.Interface}";
-        var result = Utils.RunCommand(connectCmd);
-        Console.WriteLine(result);
-        Console.WriteLine("WiFi配置已保存");
-    });
-   
-}
-
-void ApplyWifiConfig()
-{
-    if (!OperatingSystem.IsLinux())
-    {
-        Console.WriteLine("非Linux系统，跳过WiFi配置应用。");
-        return;
-    }
-    var ap = config.ApConfig;
+    
+    Console.WriteLine("正在保存WiFi配置...");
+    
     // 关闭热点，恢复接口管理
-    Utils.RunCommand($"sudo nmcli connection down Hotspot");
-    Utils.RunCommand($"sudo nmcli device set {ap.Interface} managed yes");
+    await networkManager.StopHotspotAsync();
+    await networkManager.SetDeviceManagedAsync(true);
+    
     // 启动WiFi连接
-    Utils.RunCommand($"sudo nmcli device connect {ap.Interface}");
-    Console.WriteLine("应用WiFi配置...");
+    await networkManager.ConnectDeviceAsync();
+    
+    // 使用NetworkManager连接WiFi
+    var success = await networkManager.ConnectToWifiAsync(ssid, pwd);
+    
+    if (success)
+    {
+        Console.WriteLine("WiFi配置已保存并连接成功");
+    }
+    else
+    {
+        Console.WriteLine("WiFi配置保存失败");
+    }
 }
 
-void Reboot()
+async Task RebootAsync()
 {
     if (!OperatingSystem.IsLinux())
     {
@@ -177,7 +165,7 @@ void Reboot()
         return;
     }
     Console.WriteLine("执行系统重启...");
-    Utils.RunCommand("sudo reboot");
+    await AsyncUtils.RebootAsync();
 }
 
 void ShowQrCodeOnDisplay(string url)
@@ -185,7 +173,7 @@ void ShowQrCodeOnDisplay(string url)
     if (!OperatingSystem.IsLinux())
     {
         Console.WriteLine("非Linux系统，跳过二维码显示，仅生成二维码图片。");
-        //Utils.ShowQrCode(url);
+        Utils.ShowQrCode(url);
         return;
     }
     try

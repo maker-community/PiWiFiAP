@@ -8,23 +8,8 @@ using ZXing.QrCode;
 using SkiaSharp;
 
 namespace ApWifi.App
-{
-    public static class Utils
+{    public static class Utils
     {
-        public static bool IsNetworkAvailable()
-        {
-            try
-            {
-                var ping = new Ping();
-                var reply = ping.Send("8.8.8.8", 1000);
-                return reply.Status == IPStatus.Success;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         public static string GetApIpAddress(string defaultIp)
         {
             try
@@ -56,8 +41,11 @@ namespace ApWifi.App
             {
                 return defaultIp;
             }
-        }
-
+        }        
+        
+        /// <summary>
+        /// 同步执行shell命令（保留用于兼容性）
+        /// </summary>
         public static string RunCommand(string command)
         {
             try
@@ -90,6 +78,7 @@ namespace ApWifi.App
 
         public static void ShowQrCode(string url)
         {
+            // 1. 生成二维码像素数据
             var qrWriter = new BarcodeWriterPixelData
             {
                 Format = BarcodeFormat.QR_CODE,
@@ -101,6 +90,8 @@ namespace ApWifi.App
                 }
             };
             var pixelData = qrWriter.Write(url);
+
+            // 2. 创建二维码位图
             using var bitmap = new SKBitmap(pixelData.Width, pixelData.Height, SKColorType.Gray8, SKAlphaType.Opaque);
             var bytes = pixelData.Pixels;
             for (int y = 0; y < pixelData.Height; y++)
@@ -113,10 +104,47 @@ namespace ApWifi.App
             }
             using var image = SKImage.FromBitmap(bitmap);
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-            using var stream = File.OpenWrite("/tmp/wifi-setup-qr.png");            data.SaveTo(stream);
-            Console.WriteLine("二维码已生成，请在屏幕查看或手动打开 /tmp/wifi-setup-qr.png");
-        }
 
+            // 3. 生成文件路径，兼容Windows和Linux
+            string fileName = "wifi-setup-qr.png";
+            string tmpDir = Path.GetTempPath();
+            string filePath = Path.Combine(tmpDir, fileName);
+
+            // 4. 如果文件不存在则创建（覆盖写入）
+            using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                data.SaveTo(stream);
+            }
+
+            // 5. 打开二维码图片（跨平台）
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    Process.Start(new ProcessStartInfo("explorer", $"\"{filePath}\"") { UseShellExecute = true });
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    Process.Start("xdg-open", filePath);
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    Process.Start("open", filePath);
+                }
+                else
+                {
+                    Console.WriteLine($"二维码已生成，请手动打开 {filePath}");
+                }
+            }
+            catch
+            {
+                Console.WriteLine($"二维码已生成，请手动打开 {filePath}");
+            }
+        }
+        
+        /// <summary>
+        /// 检查端口是否被占用（同步版本，保留用于兼容性）
+        /// </summary>
         public static bool IsPortInUse(int port)
         {
             try
