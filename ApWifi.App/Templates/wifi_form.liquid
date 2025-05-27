@@ -3,21 +3,105 @@
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>{{ strings.PageTitle }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #d32f2f; margin-top: 0; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type='text'], input[type='password'] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #d32f2f; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
-        button:hover { background-color: #b71c1c; }
-        .logo { text-align: center; margin-bottom: 20px; }
-        .logo img { max-width: 100px; }
-        .language-switcher { text-align: center; margin-bottom: 20px; }
-        .language-switcher select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        .language-switcher label { display: inline; margin-right: 10px; font-weight: normal; }    </style>
+    <title>{{ strings.PageTitle }}</title>    <style>
+        body { 
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; 
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%); 
+            margin: 0; 
+            padding: 20px; 
+            color: #e0e0e0; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: rgba(20, 20, 30, 0.9); 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        h1 { 
+            color: #00ffff; 
+            margin-top: 0; 
+            text-align: center; 
+            font-weight: 300; 
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 500; 
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+        input[type='text'], input[type='password'] { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 1px solid rgba(0, 255, 255, 0.3); 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            background: rgba(10, 10, 20, 0.8);
+            color: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        input[type='text']:focus, input[type='password']:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+            background: rgba(10, 10, 20, 0.9);
+        }
+        input::placeholder {
+            color: #666;
+        }
+        button { 
+            background: linear-gradient(135deg, #00ffff 0%, #0088ff  50%, #ff00ff 100%); 
+            color: #000; 
+            border: none; 
+            padding: 16px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600;
+            width: 100%; 
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
+            filter: brightness(1.1);
+        }
+        .logo { 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+        .logo img { max-width: 120px; }
+        .language-switcher { 
+            text-align: center; 
+            margin-bottom: 25px; 
+        }
+        .language-switcher select { 
+            padding: 10px 16px; 
+            border: 1px solid rgba(0, 255, 255, 0.3); 
+            border-radius: 6px; 
+            font-size: 14px; 
+            background: rgba(10, 10, 20, 0.8);
+            color: #e0e0e0;
+            min-width: 120px;
+        }
+        .language-switcher label { 
+            display: inline; 
+            margin-right: 10px; 
+            font-weight: normal; 
+            color: #b0b0b0;
+        }
+    </style>
 </head>
 <body>
     <div class='container'>
@@ -32,85 +116,109 @@
         <h1>{{ strings.WifiConfiguration }}</h1>        <div class='logo'>
             <svg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'>
                 <defs>
-                    <!-- 渐变定义 -->
-                    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#e91e63;stop-opacity:1" />
-                        <stop offset="50%" style="stop-color:#3f51b5;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#00bcd4;stop-opacity:1" />
+                    <!-- 赛博朋克主渐变 - 霓虹青蓝色调 -->
+                    <linearGradient id="cyberGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
+                        <stop offset="30%" style="stop-color:#0088ff;stop-opacity:1" />
+                        <stop offset="70%" style="stop-color:#ff00ff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
                     </linearGradient>
-                    <linearGradient id="gearGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#ff9800;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#ff5722;stop-opacity:1" />
-                    </linearGradient>
-                    <radialGradient id="circuitGradient" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" style="stop-color:#4caf50;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#2e7d32;stop-opacity:1" />
+                    
+                    <!-- 核心发光渐变 -->
+                    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                        <stop offset="30%" style="stop-color:#00ffff;stop-opacity:0.8" />
+                        <stop offset="80%" style="stop-color:#0088ff;stop-opacity:0.3" />
+                        <stop offset="100%" style="stop-color:#000033;stop-opacity:0.1" />
                     </radialGradient>
+                    
+                    <!-- 数据流渐变 -->
+                    <linearGradient id="dataFlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#00ffff;stop-opacity:0" />
+                        <stop offset="50%" style="stop-color:#00ffff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00ffff;stop-opacity:0" />
+                    </linearGradient>
+                    
+                    <!-- 发光滤镜 -->
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                        <feMerge> 
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
                 </defs>
                 
-                <!-- 外围圆环 - 代表连接和网络 -->
-                <circle cx="60" cy="60" r="55" fill="none" stroke="url(#mainGradient)" stroke-width="3" opacity="0.8"/>
+                <!-- 背景暗色圆形 -->
+                <circle cx="60" cy="60" r="58" fill="#0a0a0a" opacity="0.8"/>
                 
-                <!-- 主体齿轮 - 代表创客精神和工程思维 -->
+                <!-- 外围发光环 -->
+                <circle cx="60" cy="60" r="55" fill="none" stroke="url(#cyberGradient)" stroke-width="2" opacity="0.9" filter="url(#glow)"/>
+                
+                <!-- 次级环 -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#00ffff" stroke-width="1" opacity="0.4" stroke-dasharray="5,3"/>
+                
+                <!-- 中央主体 - 几何化设计 -->
                 <g transform="translate(60,60)">
-                    <!-- 齿轮主体 -->
-                    <circle r="25" fill="url(#gearGradient)" opacity="0.9"/>
+                    <!-- 主六边形 -->
+                    <polygon points="-20,0 -10,-17.32 10,-17.32 20,0 10,17.32 -10,17.32" 
+                             fill="none" stroke="url(#cyberGradient)" stroke-width="2" filter="url(#glow)"/>
                     
-                    <!-- 齿轮齿 -->
-                    <g fill="url(#gearGradient)">
-                        <rect x="-2" y="-30" width="4" height="8" rx="1"/>
-                        <rect x="-2" y="22" width="4" height="8" rx="1"/>
-                        <rect x="22" y="-2" width="8" height="4" rx="1"/>
-                        <rect x="-30" y="-2" width="8" height="4" rx="1"/>
-                        
-                        <rect x="15" y="-25" width="4" height="6" rx="1" transform="rotate(45)"/>
-                        <rect x="15" y="19" width="4" height="6" rx="1" transform="rotate(45)"/>
-                        <rect x="-25" y="-25" width="4" height="6" rx="1" transform="rotate(-45)"/>
-                        <rect x="-25" y="19" width="4" height="6" rx="1" transform="rotate(-45)"/>
-                    </g>
+                    <!-- 内部核心 -->
+                    <circle r="12" fill="url(#coreGlow)" opacity="0.8"/>
                     
-                    <!-- 中心孔 -->
-                    <circle r="8" fill="#ffffff" opacity="0.9"/>
+                    <!-- 核心六边形 -->
+                    <polygon points="-8,0 -4,-6.93 4,-6.93 8,0 4,6.93 -4,6.93" 
+                             fill="none" stroke="#ffffff" stroke-width="1" opacity="0.9"/>
                     
-                    <!-- 树莓派标志性的孔 -->
-                    <circle cx="-4" cy="-4" r="1.5" fill="#e91e63"/>
-                    <circle cx="4" cy="-4" r="1.5" fill="#3f51b5"/>
-                    <circle cx="-4" cy="4" r="1.5" fill="#00bcd4"/>
-                    <circle cx="4" cy="4" r="1.5" fill="#4caf50"/>
+                    <!-- 数据节点 -->
+                    <circle cx="0" cy="-6" r="1.5" fill="#00ffff" opacity="0.9"/>
+                    <circle cx="5.2" cy="-3" r="1.5" fill="#ff00ff" opacity="0.9"/>
+                    <circle cx="5.2" cy="3" r="1.5" fill="#00ffff" opacity="0.9"/>
+                    <circle cx="0" cy="6" r="1.5" fill="#ff00ff" opacity="0.9"/>
+                    <circle cx="-5.2" cy="3" r="1.5" fill="#00ffff" opacity="0.9"/>
+                    <circle cx="-5.2" cy="-3" r="1.5" fill="#ff00ff" opacity="0.9"/>
                 </g>
                 
-                <!-- 电路板痕迹 - 代表电子技术 -->
-                <g stroke="url(#circuitGradient)" stroke-width="2" fill="none" opacity="0.6">
-                    <!-- 连接线 -->
-                    <path d="M 20 40 L 35 40 L 35 25"/>
-                    <path d="M 100 40 L 85 40 L 85 25"/>
-                    <path d="M 40 100 L 40 85 L 25 85"/>
-                    <path d="M 80 100 L 80 85 L 95 85"/>
+                <!-- 数据流轨道 -->
+                <g stroke="#00ffff" stroke-width="1" fill="none" opacity="0.6">
+                    <!-- 水平数据流 -->
+                    <path d="M 15 60 L 105 60" stroke="url(#dataFlow)"/>
+                    <path d="M 60 15 L 60 105" stroke="url(#dataFlow)" transform="rotate(90 60 60)"/>
                     
-                    <!-- 连接点 -->
-                    <circle cx="20" cy="40" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="100" cy="40" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="40" cy="100" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="80" cy="100" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="35" cy="25" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="85" cy="25" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="25" cy="85" r="2" fill="url(#circuitGradient)"/>
-                    <circle cx="95" cy="85" r="2" fill="url(#circuitGradient)"/>
+                    <!-- 对角数据流 -->
+                    <path d="M 25 25 L 95 95" stroke="url(#dataFlow)" opacity="0.4"/>
+                    <path d="M 95 25 L 25 95" stroke="url(#dataFlow)" opacity="0.4"/>
                 </g>
                 
-                <!-- WiFi信号波纹 - 代表无线连接 -->
-                <g stroke="#ffffff" stroke-width="2" fill="none" opacity="0.7">
-                    <path d="M 45 15 Q 60 10, 75 15" stroke-linecap="round"/>
-                    <path d="M 50 20 Q 60 17, 70 20" stroke-linecap="round"/>
-                    <path d="M 55 25 Q 60 23, 65 25" stroke-linecap="round"/>
+                <!-- WiFi信号 - 简约几何化 -->
+                <g transform="translate(60,30)">
+                    <path d="M -15 0 Q 0 -8, 15 0" stroke="#00ffff" stroke-width="2" fill="none" opacity="0.8" filter="url(#glow)"/>
+                    <path d="M -10 3 Q 0 -3, 10 3" stroke="#00ffff" stroke-width="1.5" fill="none" opacity="0.6"/>
+                    <path d="M -5 6 Q 0 2, 5 6" stroke="#00ffff" stroke-width="1" fill="none" opacity="0.4"/>
+                    <circle cx="0" cy="8" r="1" fill="#00ffff" opacity="0.9"/>
                 </g>
                 
-                <!-- 创新火花效果 -->
-                <g fill="#ffeb3b" opacity="0.8">
-                    <polygon points="15,30 18,25 21,30 18,32" transform="rotate(15 18 28)"/>
-                    <polygon points="102,80 105,75 108,80 105,82" transform="rotate(-15 105 78)"/>
-                    <polygon points="25,90 28,85 31,90 28,92" transform="rotate(30 28 88)"/>
+                <!-- 角落装饰元素 -->
+                <g fill="#ff00ff" opacity="0.6">
+                    <rect x="10" y="10" width="8" height="2" rx="1"/>
+                    <rect x="10" y="14" width="12" height="1" rx="0.5"/>
+                    
+                    <rect x="102" y="10" width="8" height="2" rx="1"/>
+                    <rect x="98" y="14" width="12" height="1" rx="0.5"/>
+                    
+                    <rect x="10" y="106" width="8" height="2" rx="1"/>
+                    <rect x="10" y="103" width="12" height="1" rx="0.5"/>
+                    
+                    <rect x="102" y="106" width="8" height="2" rx="1"/>
+                    <rect x="98" y="103" width="12" height="1" rx="0.5"/>
                 </g>
+                
+                <!-- 脉冲动画效果 -->
+                <circle cx="60" cy="60" r="55" fill="none" stroke="#00ffff" stroke-width="1" opacity="0.3">
+                    <animate attributeName="r" values="55;60;55" dur="3s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="3s" repeatCount="indefinite"/>
+                </circle>
             </svg>
         </div>
         <form method='post' action='/config'>
