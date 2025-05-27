@@ -124,10 +124,12 @@ async Task StartWebServer(string url)
         if (!string.IsNullOrEmpty(langParam))
         {
             localizationService.SetLanguage(langParam);
-        }
-
-        var template = await File.ReadAllTextAsync("Templates/wifi_form.liquid");
+        }        var template = await File.ReadAllTextAsync("Templates/wifi_form.liquid");
         var parser = new FluidParser();
+        
+        // 配置Fluid模型绑定，允许访问LanguageItem的属性
+        TemplateOptions.Default.MemberAccessStrategy.Register<LanguageItem>();
+        
         if (!parser.TryParse(template, out var fluidTemplate, out var error))
         {
             return Results.Content($"模板解析错误: {error}", "text/plain");
@@ -138,10 +140,9 @@ async Task StartWebServer(string url)
         context.SetValue("pwd", "");
         context.SetValue("strings", localizationService.GetAllStrings());
         context.SetValue("currentLanguage", localizationService.GetCurrentLanguage());
-        
-        // 准备语言列表
+          // 准备语言列表
         var languages = localizationService.GetAvailableLanguages()
-            .Select(lang => new { Code = lang, Name = localizationService.GetLanguageDisplayName(lang) })
+            .Select(lang => new LanguageItem { Code = lang, Name = localizationService.GetLanguageDisplayName(lang) })
             .ToList();
         context.SetValue("languages", languages);
         
@@ -168,10 +169,12 @@ async Task StartWebServer(string url)
             return Results.Content($"<html><body><h1>{errorTitle}</h1><p>{errorMessage}</p><a href='/'>{backLink}</a></body></html>", "text/html");
         }
         
-        await SaveWifiConfigAsync(ssid, pwd);
-
-        var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
+        await SaveWifiConfigAsync(ssid, pwd);        var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
         var parser = new FluidParser();
+        
+        // 配置Fluid模型绑定，确保一致性
+        TemplateOptions.Default.MemberAccessStrategy.Register<LanguageItem>();
+        
         if (!parser.TryParse(template, out var fluidTemplate, out var error))
         {
             return Results.Content($"模板解析错误: {error}", "text/plain");
@@ -346,4 +349,11 @@ async Task ShowQrCodeOnDisplayAsync(string url, string gatewayIp)
         Console.WriteLine($"显示二维码时出错: {ex.Message}");
         Utils.ShowQrCode(url);
     }
+}
+
+// 语言项类，用于Fluid模板渲染
+public class LanguageItem
+{
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
 }
