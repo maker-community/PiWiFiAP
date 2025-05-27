@@ -3,7 +3,7 @@
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>WiFi配置成功</title>
+    <title>{{ strings.ConfigurationSuccessTitle }}</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; color: #333; text-align: center; }
         .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -14,14 +14,14 @@
 </head>
 <body>
     <div class='container'>
-        <h1>WiFi配置成功</h1>
-        <p>设备正在重启并连接到WiFi网络: <strong>{{ ssid }}</strong></p>
+        <h1>{{ strings.ConfigurationSuccessTitle }}</h1>
+        <p>{{ strings.ConfigurationSuccessMessage | replace: '{0}', ssid }}</p>
         <div class='loader'></div>
-        <p>设备重启后将自动连接到WiFi网络</p>
+        <p>{{ strings.RebootingMessage }}</p>
     </div>
     <script>
         setTimeout(function() {
-            document.body.innerHTML += '<div class="container" style="margin-top: 20px;"><p>系统正在重启中...</p></div>';
+            document.body.innerHTML += '<div class="container" style="margin-top: 20px;"><p>{{ strings.SystemRebooting }}</p></div>';
         }, 3000);
     </script>
 </body>

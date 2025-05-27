@@ -1,4 +1,5 @@
 using ApWifi.App;
+using ApWifi.App.Services;
 using Fluid;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -15,6 +16,7 @@ const int WebServerPort = 5000;
 
 DeviceConfig config = LoadConfig();
 NetworkManager networkManager = new(config);
+LocalizationService localizationService = new();
 
 ST7789Display? _st7789Display24;
 ST7789Display? _st7789Display47;
@@ -114,34 +116,59 @@ async Task StartWebServer(string url)
     Console.WriteLine($"正在启动Web服务器，监听地址: {url}");
     var builder = WebApplication.CreateBuilder();
     builder.WebHost.UseUrls(url);
-    var app = builder.Build();
-
-    app.MapGet("/", async () =>
+    var app = builder.Build();    
+    app.MapGet("/", async (HttpRequest req) =>
     {
+        // 获取语言参数
+        var langParam = req.Query["lang"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(langParam))
+        {
+            localizationService.SetLanguage(langParam);
+        }
+
         var template = await File.ReadAllTextAsync("Templates/wifi_form.liquid");
         var parser = new FluidParser();
         if (!parser.TryParse(template, out var fluidTemplate, out var error))
         {
             return Results.Content($"模板解析错误: {error}", "text/plain");
         }
+        
         var context = new TemplateContext();
         context.SetValue("ssid", "");
         context.SetValue("pwd", "");
+        context.SetValue("strings", localizationService.GetAllStrings());
+        context.SetValue("currentLanguage", localizationService.GetCurrentLanguage());
+        
+        // 准备语言列表
+        var languages = localizationService.GetAvailableLanguages()
+            .Select(lang => new { Code = lang, Name = localizationService.GetLanguageDisplayName(lang) })
+            .ToList();
+        context.SetValue("languages", languages);
+        
         var html = await fluidTemplate.RenderAsync(context);
         return Results.Content(html, "text/html");
-    });
-
-    app.MapPost("/config", async (HttpRequest req) =>
+    });    app.MapPost("/config", async (HttpRequest req) =>
     {
         var form = await req.ReadFormAsync();
         var ssid = form["ssid"].ToString();
         var pwd = form["pwd"].ToString();
+        var language = form["language"].ToString();
+        
+        // 设置语言
+        if (!string.IsNullOrEmpty(language))
+        {
+            localizationService.SetLanguage(language);
+        }
+        
         if (string.IsNullOrEmpty(ssid))
         {
-            return Results.Content("<html><body><h1>错误</h1><p>WiFi名称不能为空</p><a href='/'>返回</a></body></html>", "text/html");
+            var errorMessage = localizationService.GetString("WifiNameRequired");
+            var errorTitle = localizationService.GetString("Error");
+            var backLink = localizationService.GetString("BackLink");
+            return Results.Content($"<html><body><h1>{errorTitle}</h1><p>{errorMessage}</p><a href='/'>{backLink}</a></body></html>", "text/html");
         }
+        
         await SaveWifiConfigAsync(ssid, pwd);
-        //ApplyWifiConfig();
 
         var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
         var parser = new FluidParser();
@@ -149,8 +176,11 @@ async Task StartWebServer(string url)
         {
             return Results.Content($"模板解析错误: {error}", "text/plain");
         }
+        
         var context = new TemplateContext();
         context.SetValue("ssid", ssid);
+        context.SetValue("strings", localizationService.GetAllStrings());
+        
         var html = await fluidTemplate.RenderAsync(context);
         _ = Task.Run(async () =>
         {
