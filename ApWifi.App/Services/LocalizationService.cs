@@ -11,14 +11,30 @@ public class LocalizationService
     public LocalizationService()
     {
         LoadLanguages();
-    }
-
+    }    
     private void LoadLanguages()
     {
-        var resourcesPath = Path.Combine(Directory.GetCurrentDirectory(), "Resources");
-        if (!Directory.Exists(resourcesPath))
+        // Try multiple possible paths for resource files
+        var possiblePaths = new[]
         {
-            Directory.CreateDirectory(resourcesPath);
+            Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources"),
+            Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", "Resources")
+        };
+
+        string? resourcesPath = null;
+        foreach (var path in possiblePaths)
+        {
+            if (Directory.Exists(path))
+            {
+                resourcesPath = path;
+                break;
+            }
+        }
+
+        if (resourcesPath == null)
+        {
+            Console.WriteLine("Warning: Resources directory not found in any expected location");
             return;
         }
 
@@ -29,8 +45,7 @@ public class LocalizationService
             var langCode = fileName.Replace("Strings.", "");
             
             try
-            {
-                var jsonContent = File.ReadAllText(file);
+            {                var jsonContent = File.ReadAllText(file);
                 var strings = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonContent);
                 if (strings != null)
                 {
@@ -41,9 +56,7 @@ public class LocalizationService
             {
                 Console.WriteLine($"Error loading language file {file}: {ex.Message}");
             }
-        }
-
-        // 设置默认语言
+        }        // 设置默认语言
         if (_strings.Count > 0 && !_strings.ContainsKey(_currentLanguage))
         {
             _currentLanguage = _strings.Keys.First();
@@ -68,6 +81,33 @@ public class LocalizationService
 
         // 回退到英文
         if (_currentLanguage != "en-US" && 
+            _strings.TryGetValue("en-US", out var enStrings) && 
+            enStrings.TryGetValue(key, out var enValue))
+        {
+            return args.Length > 0 ? string.Format(enValue, args) : enValue;
+        }
+
+        return key; // 如果都找不到，返回键名
+    }
+
+    public string GetString(string key, string languageCode, params object[] args)
+    {
+        if (_strings.TryGetValue(languageCode, out var langStrings) && 
+            langStrings.TryGetValue(key, out var value))
+        {
+            return args.Length > 0 ? string.Format(value, args) : value;
+        }
+
+        // 回退到中文
+        if (languageCode != "zh-CN" && 
+            _strings.TryGetValue("zh-CN", out var fallbackStrings) && 
+            fallbackStrings.TryGetValue(key, out var fallbackValue))
+        {
+            return args.Length > 0 ? string.Format(fallbackValue, args) : fallbackValue;
+        }
+
+        // 回退到英文
+        if (languageCode != "en-US" && 
             _strings.TryGetValue("en-US", out var enStrings) && 
             enStrings.TryGetValue(key, out var enValue))
         {
