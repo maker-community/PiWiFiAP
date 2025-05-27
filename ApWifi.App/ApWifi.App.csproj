@@ -9,7 +9,6 @@
   <ItemGroup>
     <None Remove="Templates\wifi_form.liquid" />
     <None Remove="Templates\wifi_success.liquid" />
-    <None Remove="Templates\wpa_supplicant_conf.liquid" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,9 +16,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Templates\wifi_success.liquid">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\wpa_supplicant_conf.liquid">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Strings.zh-CN.json">
