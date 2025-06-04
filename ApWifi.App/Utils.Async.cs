@@ -24,22 +24,24 @@ namespace ApWifi.App
                 };
 
                 using var process = new Process { StartInfo = psi };
-                process.Start();
-
+                process.Start();                
+                
                 var outputTask = process.StandardOutput.ReadToEndAsync();
                 var errorTask = process.StandardError.ReadToEndAsync();
 
-                var completed = await Task.WhenAny(
-                    Task.WhenAll(outputTask, errorTask),
-                    Task.Delay(TimeSpan.FromSeconds(timeoutSeconds))
-                );
+                // 修复：将任务存储在变量中，避免重复创建Task对象
+                var allTask = Task.WhenAll(outputTask, errorTask);
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds));
+                
+                var completed = await Task.WhenAny(allTask, timeoutTask);
 
-                if (completed.Id == Task.WhenAll(outputTask, errorTask).Id)
+                if (completed == allTask)
                 {
                     await process.WaitForExitAsync();
                     var output = await outputTask;
                     var error = await errorTask;
 
+                    Console.WriteLine($"命令 '{command}' 执行完成，输出: {output}, 错误: {error}");
                     var result = new CommandResult
                     {
                         Success = process.ExitCode == 0,
@@ -60,7 +62,10 @@ namespace ApWifi.App
                     // 超时处理
                     try
                     {
-                        process.Kill();
+                        if (!process.HasExited)
+                        {
+                            process.Kill();
+                        }
                     }
                     catch { }
 
@@ -108,11 +113,18 @@ namespace ApWifi.App
         {
             try
             {
-                var result = await RunCommandAsync("ping -c 1 -W 1 8.8.8.8");
+                var result = await RunCommandAsync("sudo ping -c 1 -W 1 8.8.8.8");
+                if (!result.Success)
+                {
+                    Console.WriteLine("网络连接检查失败: " + result.Error);
+                    return false;
+                }
+                Console.WriteLine("网络连接检查成功");
                 return result.Success;
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine($"检查网络连接时出错: {ex.Message}");
                 return false;
             }
         }

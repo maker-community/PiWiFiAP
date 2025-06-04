@@ -15,7 +15,9 @@ namespace ApWifi.App
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _interface = _config.ApConfig.Interface;
-        }        /// <summary>
+        }        
+        
+        /// <summary>
         /// 异步执行nmcli命令
         /// </summary>
         private async Task<CommandResult> RunNmcliCommandAsync(string arguments, int timeoutSeconds = 30)
@@ -42,17 +44,18 @@ namespace ApWifi.App
                 };
 
                 using var process = new Process { StartInfo = psi };
-                process.Start();
-
+                process.Start();                
+                
                 var outputTask = process.StandardOutput.ReadToEndAsync();
                 var errorTask = process.StandardError.ReadToEndAsync();
 
-                var completed = await Task.WhenAny(
-                    Task.WhenAll(outputTask, errorTask),
-                    Task.Delay(TimeSpan.FromSeconds(timeoutSeconds))
-                );
+                // 修复：将任务存储在变量中，避免重复创建Task对象
+                var allTask = Task.WhenAll(outputTask, errorTask);
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds));
+                
+                var completed = await Task.WhenAny(allTask, timeoutTask);
 
-                if (completed.Id == Task.WhenAll(outputTask, errorTask).Id)
+                if (completed == allTask)
                 {
                     await process.WaitForExitAsync();
                     var output = await outputTask;
@@ -78,7 +81,10 @@ namespace ApWifi.App
                     // 超时处理
                     try
                     {
-                        process.Kill();
+                        if (!process.HasExited)
+                        {
+                            process.Kill();
+                        }
                     }
                     catch { }
 
