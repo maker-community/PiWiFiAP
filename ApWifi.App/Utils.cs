@@ -283,7 +283,7 @@ namespace ApWifi.App
                 };
                 
                 // 绘制"设备已连接"文本
-                string connectedText = "设备已连接";
+                string connectedText = "Network connected";
                 int connectedY = height / 3;
                 canvas.DrawText(connectedText, width / 2, connectedY, SKTextAlign.Center, font, paint);
                 
