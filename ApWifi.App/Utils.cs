@@ -50,6 +50,54 @@ namespace ApWifi.App
         }        
         
         /// <summary>
+        /// 获取当前WiFi连接的IP地址
+        /// </summary>
+        /// <returns>WiFi连接的IP地址，如果未找到则返回空字符串</returns>
+        public static string GetWiFiConnectedIpAddress()
+        {
+            try
+            {
+                NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+                foreach (NetworkInterface netInterface in networkInterfaces)
+                {
+                    if (netInterface.OperationalStatus != OperationalStatus.Up)
+                        continue;
+                    if (netInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                        continue;
+                    
+                    // 查找无线网络接口
+                    bool isWireless = netInterface.Description.ToLower().Contains("wireless") ||
+                                      netInterface.Name.ToLower().Contains("wlan") ||
+                                      netInterface.Name.ToLower().Contains("wi-fi");
+                    
+                    if (isWireless)
+                    {
+                        IPInterfaceProperties ipProps = netInterface.GetIPProperties();
+                        foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
+                        {
+                            if (addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                            {
+                                var ip = addr.Address.ToString();
+                                // 排除热点IP段，只返回正常WiFi连接的IP
+                                if (!ip.StartsWith("192.168.4.") && 
+                                    !ip.StartsWith("10.42.0.") &&
+                                    !ip.StartsWith("169.254.")) // 排除APIPA地址
+                                {
+                                    return ip;
+                                }
+                            }
+                        }
+                    }
+                }
+                return string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+        
+        /// <summary>
         /// 同步执行shell命令（保留用于兼容性）
         /// </summary>
         public static string RunCommand(string command)
@@ -200,7 +248,77 @@ namespace ApWifi.App
             }
             return image;
         }
-          /// <summary>
+
+        /// <summary>
+        /// 创建仅包含IP地址文本的图像，用于显示设备连接状态
+        /// </summary>
+        /// <param name="ipAddress">IP地址文本</param>
+        /// <param name="width">目标图像宽度</param>
+        /// <param name="height">目标图像高度</param>
+        /// <returns>包含IP地址文本的图像</returns>
+        public static Image<Bgra32> CreateIpDisplayImage(string ipAddress, int width, int height)
+        {
+            // 创建目标图像
+            var image = new Image<Bgra32>(width, height);
+            
+            // 填充白色背景
+            image.Mutate(ctx => ctx.Fill(Color.White));
+            
+            try
+            {
+                // 使用SkiaSharp绘制文本
+                using var bitmap = new SKBitmap(width, height);
+                using var canvas = new SKCanvas(bitmap);
+                
+                // 填充白色背景
+                canvas.Clear(SKColors.White);
+                
+                // 设置字体大小 - 根据屏幕大小调整
+                int fontSize = Math.Min(24, Math.Min(width / 12, height / 8));
+                using var font = new SKFont(SKTypeface.Default, fontSize);
+                using var paint = new SKPaint
+                {
+                    Color = SKColors.Black,
+                    IsAntialias = true
+                };
+                
+                // 绘制"设备已连接"文本
+                string connectedText = "设备已连接";
+                int connectedY = height / 3;
+                canvas.DrawText(connectedText, width / 2, connectedY, SKTextAlign.Center, font, paint);
+                
+                // 绘制IP地址文本（更大字体）
+                using var ipFont = new SKFont(SKTypeface.Default, fontSize + 4);
+                using var ipPaint = new SKPaint
+                {
+                    Color = SKColors.Blue,
+                    IsAntialias = true,
+                };
+                
+                string ipText = $"IP: {ipAddress}";
+                int ipY = height / 2 + fontSize;
+                canvas.DrawText(ipText, width / 2, ipY, SKTextAlign.Center, ipFont, ipPaint);
+                
+                // 将结果转回ImageSharp
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var color = bitmap.GetPixel(x, y);
+                        image[x, y] = new Bgra32(color.Red, color.Green, color.Blue, color.Alpha);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"警告：无法绘制IP地址文本: {ex.Message}");
+                // 如果绘制失败，至少返回白色背景
+            }
+            
+            return image;
+        }
+        
+        /// <summary>
         /// 创建包含二维码和IP地址文本的图像，适配指定尺寸的屏幕
         /// </summary>
         /// <param name="url">二维码URL</param>

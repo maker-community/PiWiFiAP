@@ -92,6 +92,18 @@ try
     else
     {
         Log.Information("已连接到网络，无需配置");
+        
+        // 获取设备当前连接的IP地址并显示到屏幕
+        var connectedIp = Utils.GetWiFiConnectedIpAddress();
+        if (!string.IsNullOrEmpty(connectedIp))
+        {
+            Log.Information("设备已连接WiFi，IP地址: {ConnectedIp}", connectedIp);
+            await ShowConnectedIpOnDisplayAsync(connectedIp);
+        }
+        else
+        {
+            Log.Warning("无法获取WiFi连接的IP地址");
+        }
     }
 
     async Task<string> StartAccessPointAsync(string ip)
@@ -364,6 +376,80 @@ try
         {
             Log.Error(ex, "显示二维码时出错");
             Utils.ShowQrCode(url);
+        }
+    }
+
+    async Task ShowConnectedIpOnDisplayAsync(string ipAddress)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Log.Information("非Linux系统，跳过IP地址显示");
+            return;
+        }
+
+        try
+        {
+            Log.Information("正在显示连接的IP地址到屏幕: {IpAddress}", ipAddress);
+
+            _gpioController = new GpioController();
+
+            var settings1 = new SpiConnectionSettings(0, 0)
+            {
+                ClockFrequency = 24_000_000,
+                Mode = SpiMode.Mode0,
+            };
+
+            var settings2 = new SpiConnectionSettings(0, 1)
+            {
+                ClockFrequency = 24_000_000,
+                Mode = SpiMode.Mode0,
+            };            Log.Information("正在初始化2.4寸显示器...");
+            _st7789Display24 = new ST7789Display(settings1, _gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
+            Log.Information("2.4寸显示器初始化完成");
+
+            Log.Information("正在初始化1.47寸显示器...");
+            _st7789Display47 = new ST7789Display(settings2, _gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
+            Log.Information("1.47寸显示器初始化完成");// 清屏
+            _st7789Display24.FillScreen(0x0000);  // 黑色
+            _st7789Display47.FillScreen(0x0000);  // 黑色            
+            // 显示IP地址
+            Log.Information("在屏幕上显示IP地址: {IpAddress}", ipAddress);
+
+            // 为2.4寸屏幕(240x320)生成IP地址显示图像（横屏模式：320x240）
+            var ipImage24 = Utils.CreateIpDisplayImage(ipAddress, 320, 240);
+
+            // 为1.47寸屏幕(172x320)生成IP地址显示图像（横屏模式：320x172）
+            var ipImage47 = Utils.CreateIpDisplayImage(ipAddress, 320, 172);
+
+            using Image<Bgr24> convertedIpImage24 = ipImage24.CloneAs<Bgr24>();
+            using Image<Bgr24> convertedIpImage47 = ipImage47.CloneAs<Bgr24>();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                convertedIpImage24.Mutate(x => x.Rotate(90));
+                var data1 = _st7789Display24?.GetImageBytes(convertedIpImage24);
+
+                if (data1 != null)
+                {
+                    _st7789Display24?.SendData(data1);
+                }
+
+                await Task.Delay(5); // 短暂延时确保传输完成
+
+                convertedIpImage47.Mutate(x => x.Rotate(90));
+                var data2 = _st7789Display47?.GetImageBytes(convertedIpImage47);
+                if (data2 != null)
+                {
+                    _st7789Display47?.SendData(data2);
+                }
+            }            
+            // 释放资源
+            ipImage24.Dispose();
+            ipImage47.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "显示IP地址时出错");
         }
     }
 }
