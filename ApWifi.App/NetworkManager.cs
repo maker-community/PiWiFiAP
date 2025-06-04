@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
 using Fluid;
+using Serilog;
 
 namespace ApWifi.App
 {
@@ -19,12 +20,12 @@ namespace ApWifi.App
         
         /// <summary>
         /// 异步执行nmcli命令
-        /// </summary>
+        /// </summary>        
         private async Task<CommandResult> RunNmcliCommandAsync(string arguments, int timeoutSeconds = 30)
         {
             if (!OperatingSystem.IsLinux())
             {
-                Console.WriteLine("非Linux系统，跳过nmcli命令执行");
+                Log.Warning("非Linux系统，跳过nmcli命令执行");
                 return new CommandResult { Success = false, Output = "非Linux系统" };
             }
 
@@ -67,11 +68,9 @@ namespace ApWifi.App
                         Output = output,
                         Error = error,
                         ExitCode = process.ExitCode
-                    };
-
-                    if (!result.Success && !string.IsNullOrEmpty(error))
+                    };                    if (!result.Success && !string.IsNullOrEmpty(error))
                     {
-                        Console.WriteLine($"nmcli命令执行失败: {error}");
+                        Log.Error("nmcli命令执行失败: {Error}", error);
                     }
 
                     return result;
@@ -96,10 +95,9 @@ namespace ApWifi.App
                         ExitCode = -1
                     };
                 }
-            }
-            catch (Exception ex)
+            }            catch (Exception ex)
             {
-                Console.WriteLine($"执行nmcli命令时出错: {ex.Message}");
+                Log.Error(ex, "执行nmcli命令时出错");
                 return new CommandResult
                 {
                     Success = false,
@@ -121,10 +119,10 @@ namespace ApWifi.App
 
         /// <summary>
         /// 连接到WiFi网络
-        /// </summary>
+        /// </summary>        
         public async Task<bool> ConnectToWifiAsync(string ssid, string password)
         {
-            Console.WriteLine($"正在连接到WiFi: {ssid}");
+            Log.Information("正在连接到WiFi: {Ssid}", ssid);
             
             // 使用正确的nmcli参数，添加引号处理特殊字符
             var connectCmd = $"device wifi connect \"{ssid}\" password \"{password}\" ifname {_interface}";
@@ -132,12 +130,12 @@ namespace ApWifi.App
             
             if (result.Success)
             {
-                Console.WriteLine($"WiFi连接成功: {ssid}");
-                Console.WriteLine(result.Output);
+                Log.Information("WiFi连接成功: {Ssid}", ssid);
+                Log.Debug("连接输出: {Output}", result.Output);
             }
             else
             {
-                Console.WriteLine($"WiFi连接失败: {result.Error}");
+                Log.Error("WiFi连接失败: {Error}", result.Error);
             }
             
             return result.Success;
@@ -145,16 +143,16 @@ namespace ApWifi.App
         
         /// <summary>
         /// 断开设备连接
-        /// </summary>
+        /// </summary>        
         public async Task<bool> DisconnectDeviceAsync()
         {
-            Console.WriteLine($"正在断开设备连接: {_interface}");
+            Log.Information("正在断开设备连接: {Interface}", _interface);
             
             var disconnectCmd = $"device disconnect {_interface}";
             var result = await RunNmcliCommandAsync(disconnectCmd);
             
             return result.Success;
-        }        
+        }
         
         /// <summary>
         /// 关闭热点连接 (仅使用 nmcli)
@@ -167,11 +165,11 @@ namespace ApWifi.App
 
         /// <summary>
         /// 设置设备管理状态
-        /// </summary>
+        /// </summary>        
         public async Task<bool> SetDeviceManagedAsync(bool managed)
         {
             var managedState = managed ? "yes" : "no";
-            Console.WriteLine($"正在设置设备管理状态: {_interface} -> {managedState}");
+            Log.Information("正在设置设备管理状态: {Interface} -> {ManagedState}", _interface, managedState);
             
             var setCmd = $"device set {_interface} managed {managedState}";
             var result = await RunNmcliCommandAsync(setCmd);
@@ -181,10 +179,10 @@ namespace ApWifi.App
 
         /// <summary>
         /// 连接设备
-        /// </summary>
+        /// </summary>        
         public async Task<bool> ConnectDeviceAsync()
         {
-            Console.WriteLine($"正在连接设备: {_interface}");
+            Log.Information("正在连接设备: {Interface}", _interface);
             
             var connectCmd = $"device connect {_interface}";
             var result = await RunNmcliCommandAsync(connectCmd);
@@ -194,10 +192,10 @@ namespace ApWifi.App
 
         /// <summary>
         /// 获取WiFi扫描结果
-        /// </summary>
+        /// </summary>        
         public async Task<string> ScanWifiAsync()
         {
-            Console.WriteLine("正在扫描WiFi网络");
+            Log.Information("正在扫描WiFi网络");
             
             var scanCmd = $"device wifi list ifname {_interface}";
             var result = await RunNmcliCommandAsync(scanCmd);
@@ -218,12 +216,12 @@ namespace ApWifi.App
         
         /// <summary>
         /// 使用nmcli启动WiFi热点
-        /// </summary>
+        /// </summary>        
         public async Task<bool> StartHotspotWithNmcliAsync(string ssid, string password)
         {
-            Console.WriteLine($"正在使用nmcli启动WiFi热点: {ssid}");
-            Console.WriteLine($"使用配置的IP地址: {_config.ApConfig.Ip}");
-            Console.WriteLine($"使用配置的DHCP范围: {_config.ApConfig.DhcpStart} - {_config.ApConfig.DhcpEnd}");
+            Log.Information("正在使用nmcli启动WiFi热点: {Ssid}", ssid);
+            Log.Information("使用配置的IP地址: {Ip}", _config.ApConfig.Ip);
+            Log.Information("使用配置的DHCP范围: {DhcpStart} - {DhcpEnd}", _config.ApConfig.DhcpStart, _config.ApConfig.DhcpEnd);
 
             try
             {
@@ -239,65 +237,63 @@ namespace ApWifi.App
 
                 // 创建新的热点连接
                 var createHotspotCmd = $"device wifi hotspot ifname {_interface} con-name {ssid} ssid \"{ssid}\" password \"{password}\"";
-                var result = await RunNmcliCommandAsync(createHotspotCmd);
-
+                var result = await RunNmcliCommandAsync(createHotspotCmd);                
                 if (!result.Success)
                 {
-                    Console.WriteLine($"创建WiFi热点失败: {result.Error}");
+                    Log.Error("创建WiFi热点失败: {Error}", result.Error);
                     return false;
                 }
 
                 // 设置IP地址和掩码（使用配置文件中的IP）
                 var ipCmd = $"connection modify {ssid} ipv4.addresses {_config.ApConfig.Ip}/24";
-                var ipResult = await RunNmcliCommandAsync(ipCmd);
+                var ipResult = await RunNmcliCommandAsync(ipCmd);                
                 if (!ipResult.Success)
                 {
-                    Console.WriteLine($"设置IP地址失败: {ipResult.Error}");
+                    Log.Warning("设置IP地址失败: {Error}", ipResult.Error);
                 }
 
                 // 设置为手动IP模式
                 var methodCmd = $"connection modify {ssid} ipv4.method manual";
-                var methodResult = await RunNmcliCommandAsync(methodCmd);
+                var methodResult = await RunNmcliCommandAsync(methodCmd);                
                 if (!methodResult.Success)
                 {
-                    Console.WriteLine($"设置IP模式失败: {methodResult.Error}");
+                    Log.Warning("设置IP模式失败: {Error}", methodResult.Error);
                 }
 
                 // 启用DHCP服务器（使用配置文件中的DHCP范围）
                 var dhcpCmd = $"connection modify {ssid} ipv4.dhcp-range \"{_config.ApConfig.DhcpStart},{_config.ApConfig.DhcpEnd}\"";
-                var dhcpResult = await RunNmcliCommandAsync(dhcpCmd);
+                var dhcpResult = await RunNmcliCommandAsync(dhcpCmd);                
                 if (!dhcpResult.Success)
                 {
-                    Console.WriteLine($"设置DHCP范围失败: {dhcpResult.Error}");
+                    Log.Warning("设置DHCP范围失败: {Error}", dhcpResult.Error);
                 }
 
                 // 重新应用配置
                 var upCmd = $"connection up {ssid}";
-                var upResult = await RunNmcliCommandAsync(upCmd);
-
+                var upResult = await RunNmcliCommandAsync(upCmd);                
                 if (!upResult.Success)
                 {
-                    Console.WriteLine($"启动WiFi热点失败: {upResult.Error}");
+                    Log.Error("启动WiFi热点失败: {Error}", upResult.Error);
                     return false;
                 }
 
-                Console.WriteLine($"WiFi热点启动成功: {ssid}");
-                Console.WriteLine($"热点IP: {_config.ApConfig.Ip}");
+                Log.Information("WiFi热点启动成功: {Ssid}", ssid);
+                Log.Information("热点IP: {Ip}", _config.ApConfig.Ip);
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"启动WiFi热点时出错: {ex.Message}");
+                Log.Error(ex, "启动WiFi热点时出错");
                 return false;
             }
         }
 
         /// <summary>
         /// 使用nmcli关闭WiFi热点
-        /// </summary>
+        /// </summary>        
         public async Task<bool> StopHotspotWithNmcliAsync(string ssid)
         {
-            Console.WriteLine($"正在关闭nmcli WiFi热点: {ssid}");
+            Log.Information("正在关闭nmcli WiFi热点: {Ssid}", ssid);
 
             try
             {
@@ -307,20 +303,19 @@ namespace ApWifi.App
 
                 // 删除连接
                 var deleteCmd = $"connection delete {ssid}";
-                var result = await RunNmcliCommandAsync(deleteCmd);
-
+                var result = await RunNmcliCommandAsync(deleteCmd);                
                 if (!result.Success)
                 {
-                    Console.WriteLine($"关闭WiFi热点失败: {result.Error}");
+                    Log.Error("关闭WiFi热点失败: {Error}", result.Error);
                     return false;
                 }
 
-                Console.WriteLine("WiFi热点已关闭");
+                Log.Information("WiFi热点已关闭: {Ssid}", ssid);
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"关闭WiFi热点时出错: {ex.Message}");
+                Log.Error(ex, "关闭WiFi热点时出错");
                 return false;
             }
         }
