@@ -208,9 +208,7 @@ try
                 var errorTitle = localizationService.GetString("Error");
                 var backLink = localizationService.GetString("BackLink");
                 return Results.Content($"<html><body><h1>{errorTitle}</h1><p>{errorMessage}</p><a href='/'>{backLink}</a></body></html>", "text/html");
-            }
-
-            await SaveWifiConfigAsync(ssid, pwd); 
+            }            
             
             var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
             var parser = new FluidParser();
@@ -231,7 +229,8 @@ try
 
             _ = Task.Run(async () =>
             {
-                await Task.Delay(50000);
+                await SaveWifiConfigAsync(ssid, pwd); 
+                await Task.Delay(10_000);
                 await RebootAsync();
             });
             return Results.Content(html, "text/html");
