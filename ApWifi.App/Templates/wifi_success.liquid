@@ -3,26 +3,66 @@
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>WiFi配置成功</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; color: #333; text-align: center; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #4CAF50; }
-        .loader { border: 16px solid #f3f3f3; border-radius: 50%; border-top: 16px solid #3498db; width: 60px; height: 60px; margin: 20px auto; animation: spin 2s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    <title>{{ strings.ConfigurationSuccessTitle }}</title>    <style>
+        body { 
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; 
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%); 
+            margin: 0; 
+            padding: 20px; 
+            color: #e0e0e0; 
+            text-align: center; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: rgba(20, 20, 30, 0.9); 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        h1 { 
+            color: #00ffff; 
+            font-weight: 300; 
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            margin-bottom: 20px;
+        }
+        p {
+            color: #b0b0b0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .loader { 
+            border: 4px solid rgba(0, 255, 255, 0.1); 
+            border-radius: 50%; 
+            border-top: 4px solid #00ffff; 
+            width: 60px; 
+            height: 60px; 
+            margin: 30px auto; 
+            animation: spin 2s linear infinite;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
     </style>
 </head>
 <body>
     <div class='container'>
-        <h1>WiFi配置成功</h1>
-        <p>设备正在重启并连接到WiFi网络: <strong>{{ ssid }}</strong></p>
+        <h1>{{ strings.ConfigurationSuccessTitle }}</h1>
+        <p>{{ strings.ConfigurationSuccessMessage | replace: '{0}', ssid }}</p>
         <div class='loader'></div>
-        <p>设备重启后将自动连接到WiFi网络</p>
+        <p>{{ strings.RebootingMessage }}</p>
     </div>
     <script>
         setTimeout(function() {
-            document.body.innerHTML += '<div class="container" style="margin-top: 20px;"><p>系统正在重启中...</p></div>';
-        }, 3000);
+            document.body.innerHTML += '<div class="container" style="margin-top: 20px;"><p>{{ strings.SystemRebooting }}</p></div>';
+        }, 10000);
     </script>
 </body>
 </html>
