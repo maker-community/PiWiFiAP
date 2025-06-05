@@ -1,106 +1,307 @@
-# ApWifi（中文说明）
+<div align="center">
 
-> ✅ **项目状态：已在树莓派5上测试验证**
->
-> 本项目已在运行树莓派OS的树莓派5上成功测试。创建的AP热点名称为"RaspberryPi5-WiFiSetup"，WiFi配置功能运行正常。
+# 🌐 ApWifi（中文说明）
 
-<p align="right">
-  <a href="README.md">🇺🇸 English</a>
-</p>
+**树莓派5智能WiFi配置解决方案**
 
-本项目是为树莓派5设计的.NET 8解决方案，实现了基于AP热点的WiFi配置功能。当设备无网络时自动开启名为"RaspberryPi5-WiFiSetup"的AP热点，生成二维码（在连接的屏幕上显示），并启动本地Web页面用于WiFi配置。配置完成后自动写入系统并重启连接WiFi。
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
+[![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-5-C51A4A?style=for-the-badge&logo=raspberry-pi)](https://www.raspberrypi.org/)
+[![License](https://img.shields.io/github/license/maker-community/PiWiFiAP?style=for-the-badge)](LICENSE.txt)
+[![Status](https://img.shields.io/badge/状态-生产就绪-success?style=for-the-badge)](README.zh-CN.md)
 
-## 功能截图
+*通过直观的Web界面和自动AP热点回退功能，在树莓派上无缝配置WiFi*
 
-| 屏幕显示 | WiFi配置界面 |
-|:---:|:---:|
-| ![设备未连接网络](assets/network-not-connected.JPG) | ![WiFi设置表单](assets/set_ssid_zh.PNG) |
-| **离线状态**：屏幕显示用于WiFi配置的二维码 | **配置页面**：输入WiFi名称和密码 |
+[🇺🇸 English](README.md) • [🇨🇳 中文说明](#) • [📖 文档](docs/) • [🤝 贡献指南](CONTRIBUTING.md) • [🚀 快速开始](#-快速开始)
 
-| 配置完成后 | 多语言支持 |
-|:---:|:---:|
-| ![配置成功](assets/set_ssid_ok_zh.PNG) | ![英文界面](assets/set_ssid_en.PNG) |
-| **成功页面**：设备正在重启以应用设置 | **英文界面**：完整的多语言本地化支持 |
+---
 
-| 连接成功状态 |
-|:---:|
-| ![网络已连接](assets/network-connected.JPG) |
-| **连接成功后**：设备显示其IP地址 |
+</div>
 
-## 功能特性
-- ✅ **已测试**：无网络时自动进入AP热点模式（创建"RaspberryPi5-WiFiSetup"网络）
-- ✅ **已测试**：使用.NET IoT库和SkiaSharp渲染在SPI连接的屏幕上生成并显示二维码
-- ✅ **已测试**：本地Web服务器提供响应式WiFi SSID/密码输入界面
-- ✅ **已测试**：WiFi配置通过系统命令写入树莓派OS
-- ✅ **已测试**：配置完成后自动重启并连接WiFi
-- ✅ **已测试**：多语言支持（英语、中文、德语、法语、日语）
-- 所有AP和WiFi参数均可通过`appsettings.json`和Liquid模板灵活配置
+## 🚀 快速开始
 
-## 使用方法
-1. **部署**：部署到运行树莓派OS的树莓派5。
-2. **初始设置**：首次启动或离线时，设备自动进入AP模式（创建"RaspberryPi5-WiFiSetup"热点）并在连接的屏幕上显示二维码。
-3. **配置**：用手机扫描二维码或连接到AP网络并访问显示的IP地址，打开WiFi配置网页。
-4. **WiFi设置**：在Web界面中输入WiFi名称和密码（支持多语言）。
-5. **应用设置**：设备自动应用WiFi设置并重启。
-6. **连接**：重启后设备连接到配置的WiFi网络并在屏幕上显示其IP地址。
+ApWifi是为树莓派5设计的强大.NET 8解决方案，将WiFi配置转化为无缝体验。当设备离线时，自动创建名为**"RaspberryPi5-WiFiSetup"**的接入点，在SPI屏幕上显示交互式二维码，并提供精美的Web界面进行WiFi设置。
 
-## 工作原理
+### ✨ 核心优势
+- 🔄 **零接触设置** - 离线时自动回退到AP模式
+- 📱 **移动友好** - 任何智能手机都可扫描二维码
+- 🌍 **多语言** - 支持5+种语言并自动检测
+- 🎨 **现代UI** - 适配所有设备的响应式设计
+- 🔧 **生产就绪** - 在真实硬件上彻底测试
 
-### 网络断开时
-- 设备启动名为"RaspberryPi5-WiFiSetup"的AP热点
-- 在连接的屏幕上显示指向配置URL的二维码
-- 在AP网络上运行本地Web服务器用于WiFi配置
+---
 
-### WiFi配置过程中
-- Web界面允许输入WiFi SSID和密码
-- 支持多语言并自动检测语言
-- 提供实时反馈和验证
+## 📸 功能截图
 
-### 配置完成后
-- WiFi设置被写入系统配置
-- 设备自动重启以应用更改
-- 连接到指定的WiFi网络
-- 在屏幕上显示分配的IP地址
+<div align="center">
 
-## 依赖环境
-- .NET 8 SDK
-- **树莓派5** + **树莓派OS**（已测试验证）
-- .NET IoT库用于硬件控制
-- 通过SPI连接到树莓派的显示器/屏幕用于二维码显示
-- SkiaSharp库用于图像渲染和SPI传输
-- 网络配置操作需要root权限
+### 🔌 离线模式 - 二维码显示
+<img src="assets/network-not-connected.JPG" width="45%" alt="二维码显示">
 
-## 测试环境
-- **硬件**：树莓派5
-- **操作系统**：树莓派OS（64位）
-- **运行时**：.NET 8
-- **网络**：已在各种WiFi网络上成功测试
-- **显示**：已在SPI连接的显示器上测试，使用.NET IoT库和SkiaSharp渲染
+*设备在无网络时自动在SPI屏幕上显示二维码*
 
-## 构建与运行
+### 📱 WiFi配置界面
 
-### 开发环境
-```sh
-dotnet build
-cd ApWifi.App
-dotnet run
+<table>
+<tr>
+<td align="center">
+<img src="assets/set_ssid_zh.PNG" width="100%" alt="中文界面">
+<br><b>🇨🇳 中文界面</b>
+</td>
+<td align="center">
+<img src="assets/set_ssid_en.PNG" width="100%" alt="英文界面">
+<br><b>🇺🇸 英文界面</b>
+</td>
+</tr>
+</table>
+
+### ✅ 配置成功
+
+<table>
+<tr>
+<td align="center">
+<img src="assets/set_ssid_ok_zh.PNG" width="100%" alt="成功中文">
+<br><b>🔄 正在重启（中文）</b>
+</td>
+<td align="center">
+<img src="assets/set_ssid_ok_en.PNG" width="100%" alt="成功英文">
+<br><b>🔄 正在重启（英文）</b>
+</td>
+</tr>
+</table>
+
+### 🌐 连接成功状态
+<img src="assets/network-connected.JPG" width="45%" alt="连接成功">
+
+*连接成功后，设备在SPI屏幕上显示其IP地址*
+
+</div>
+
+---
+
+---
+
+## 📚 目录
+
+- [🚀 快速开始](#-快速开始)
+- [📸 功能截图](#-功能截图)
+- [⭐ 功能特性](#-功能特性)
+- [🎯 工作原理](#-工作原理)
+- [🛠️ 技术栈与环境要求](#️-技术栈与环境要求)
+- [🚀 安装与部署](#-安装与部署)
+- [🤝 贡献](#-贡献)
+- [📝 许可证](#-许可证)
+- [💬 支持与社区](#-支持与社区)
+
+## ⭐ 功能特性
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔥 核心功能
+- ✅ **自动AP热点** - 创建"RaspberryPi5-WiFiSetup"网络
+- ✅ **二维码显示** - 通过SkiaSharp在SPI屏幕上渲染
+- ✅ **响应式Web界面** - 精美的移动优化界面
+- ✅ **系统集成** - 通过OS命令直接配置WiFi
+- ✅ **自动重启** - 无缝切换到配置的网络
+
+</td>
+<td width="50%">
+
+### 🌟 高级功能
+- ✅ **多语言支持** - 英语、中文、德语、法语、日语
+- ✅ **硬件集成** - .NET IoT库支持SPI显示器
+- ✅ **配置管理** - Liquid模板和JSON配置
+- ✅ **生产就绪** - 在树莓派5上彻底测试
+- ✅ **自动检测** - 智能语言和网络检测
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🎯 工作原理
+
+<div align="center">
+
+```mermaid
+graph TD
+    A[🔌 设备启动] --> B{🌐 网络可用？}
+    B -->|否| C[📡 创建AP热点<br/>RaspberryPi5-WiFiSetup]
+    B -->|是| D[✅ 在SPI屏幕上<br/>显示IP地址]
+    C --> E[📱 在SPI屏幕上<br/>显示二维码]
+    E --> F[🌍 用户扫描二维码<br/>打开Web界面]
+    F --> G[⚙️ 用户输入WiFi<br/>凭据]
+    G --> H[💾 保存配置<br/>到系统]
+    H --> I[🔄 自动重启]
+    I --> D
 ```
 
-### 部署到树莓派
-1. **构建ARM64版本**：
-   ```sh
-   dotnet publish ApWifi.App/ApWifi.App.csproj -c Release -r linux-arm64 --self-contained
-   ```
+</div>
 
-2. **上传到树莓派**：
-   将发布的文件上传到树莓派（例如到 `/home/pi/ApWifi`）
+### 📶 网络断开模式
+- 🚀 设备自动启动**"RaspberryPi5-WiFiSetup"** AP热点
+- 🖥️ 使用**SkiaSharp**渲染二维码并在**SPI屏幕**上显示
+- 🌐 在AP网络上运行本地Web服务器进行配置
 
-3. **配置开机自启动服务**：
-   查看 [`scripts/README.md`](scripts/README.md) 中的详细说明，了解如何设置systemd服务以在开机时自动启动应用程序。
+### 🔧 WiFi配置过程
+- 📱 **移动优化**的Web界面，具有实时验证功能
+- 🌍 **自动语言检测**，支持5+种语言
+- ⚡ **即时反馈**和错误处理
 
-## 注意事项
-- **生产就绪**：所有系统配置功能（AP设置、WiFi配置、重启）均已在树莓派OS上测试验证。
-- **Root权限**：网络配置和重启等操作需要在树莓派OS上以root权限运行。
-- **跨平台**：在非Linux平台上，系统操作会被跳过并显示信息提示，便于开发调试。
-- **配置管理**：所有设置和模板均通过`appsettings.json`和`Templates/`目录下的Liquid模板管理。
-- **热点名称**：AP热点默认创建名为"RaspberryPi5-WiFiSetup"的网络。
+### ✅ 配置完成后
+- 💾 WiFi设置直接写入**系统配置**
+- 🔄 **自动重启**以应用网络更改
+- 📡 连接到指定WiFi并在**屏幕上显示IP地址**
+
+---
+
+## 🛠️ 技术栈与环境要求
+
+<div align="center">
+
+### 💻 核心技术
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)
+![C#](https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp)
+![SkiaSharp](https://img.shields.io/badge/SkiaSharp-图形处理-FF6B35?style=flat-square)
+![IoT](https://img.shields.io/badge/.NET%20IoT-硬件控制-5C2D91?style=flat-square)
+
+</div>
+
+### 📋 环境要求
+
+| 组件 | 规格说明 | 状态 |
+|------|----------|------|
+| **平台** | 树莓派5 | ✅ 已测试 |
+| **操作系统** | 树莓派OS（64位） | ✅ 已验证 |
+| **运行时** | .NET 8 SDK | ✅ 必需 |
+| **显示器** | SPI连接屏幕 | ✅ 支持 |
+| **类库** | .NET IoT + SkiaSharp | ✅ 已包含 |
+| **权限** | 网络操作需root访问 | ⚠️ 必需 |
+
+### 🧪 测试环境
+- **硬件**：树莓派5（ARM64）
+- **操作系统**：树莓派OS 64位
+- **显示器**：SPI连接屏幕，使用.NET IoT驱动
+- **图形处理**：SkiaSharp渲染引擎
+- **网络**：已在各种WiFi配置下测试
+
+---
+
+## 🚀 安装与部署
+
+### 💻 开发环境设置
+
+```bash
+# 克隆仓库
+git clone https://github.com/maker-community/PiWiFiAP.git
+cd PiWiFiAP
+
+# 构建项目
+dotnet build
+
+# 本地运行（用于开发）
+dotnet run --project ApWifi.App/ApWifi.App.csproj
+```
+
+### 🔧 生产环境部署
+
+<details>
+<summary><b>📦 步骤1：构建ARM64版本</b></summary>
+
+```bash
+# 为树莓派创建优化构建
+dotnet publish ApWifi.App/ApWifi.App.csproj \
+  -c Release \
+  -r linux-arm64 \
+  --self-contained \
+  -o ./publish
+```
+
+</details>
+
+<details>
+<summary><b>📤 步骤2：上传到树莓派</b></summary>
+
+```bash
+# 使用SCP（替换为您的树莓派IP）
+scp -r ./publish pi@192.168.1.100:/home/pi/ApWifi
+
+# 或者使用FileZilla、WinSCP等工具
+# 目标目录：/home/pi/ApWifi
+```
+
+</details>
+
+<details>
+<summary><b>⚙️ 步骤3：配置开机自启动服务</b></summary>
+
+```bash
+# SSH连接到树莓派
+ssh pi@192.168.1.100
+
+# 创建systemd服务
+sudo nano /etc/systemd/system/apwifi-app.service
+
+# 启用并启动服务
+sudo systemctl enable apwifi-app.service
+sudo systemctl start apwifi-app.service
+
+# 检查状态
+sudo systemctl status apwifi-app.service
+```
+
+📖 **详细说明**：查看 [`scripts/README.md`](scripts/README.md)
+
+</details>
+
+---
+
+## 🤝 贡献
+
+欢迎贡献！以下是如何帮助改进ApWifi的方法：
+
+<div align="center">
+
+[![Issues](https://img.shields.io/github/issues/maker-community/PiWiFiAP?style=for-the-badge)](https://github.com/maker-community/PiWiFiAP/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/maker-community/PiWiFiAP?style=for-the-badge)](https://github.com/maker-community/PiWiFiAP/pulls)
+[![Contributors](https://img.shields.io/github/contributors/maker-community/PiWiFiAP?style=for-the-badge)](https://github.com/maker-community/PiWiFiAP/graphs/contributors)
+
+</div>
+
+### 🎯 参与方式
+- 🐛 **报告错误**或通过[Issues](https://github.com/maker-community/PiWiFiAP/issues)建议功能
+- 🌍 **添加新语言**翻译
+- 📖 **改进文档**
+- 🔧 **提交拉取请求**进行功能增强
+- ⭐ **点赞项目**如果您觉得有用！
+
+---
+
+## 📝 许可证
+
+本项目采用**MIT许可证** - 详见[LICENSE.txt](LICENSE.txt)文件。
+
+---
+
+## 💬 支持与社区
+
+<div align="center">
+
+**觉得这个项目有帮助吗？给个⭐吧！**
+
+[![GitHub stars](https://img.shields.io/github/stars/maker-community/PiWiFiAP?style=social)](https://github.com/maker-community/PiWiFiAP/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/maker-community/PiWiFiAP?style=social)](https://github.com/maker-community/PiWiFiAP/network/members)
+
+---
+
+**有问题？遇到问题？有想法？**
+
+[💬 开始讨论](https://github.com/maker-community/PiWiFiAP/discussions) • [🐛 报告错误](https://github.com/maker-community/PiWiFiAP/issues) • [📧 联系我们](mailto:gil.zhang.dev@outlook..com)
+
+---
+
+*为树莓派社区用❤️制作*
+
+</div>
