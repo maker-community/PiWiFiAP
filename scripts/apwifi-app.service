@@ -1,0 +1,32 @@
+[Unit]
+#The # is a comment line
+#Documentation https://www.freedesktop.org/software/systemd/man/systemd.service.html
+
+#Place short description here
+Description=.NET IoT  applications running on Raspberry Pi OS
+
+#This will not start execution of this file until the network connection is made
+#It can be replaced with other parameters of your choosing
+After=network.target
+
+[Service]
+#Default: Startup type
+Type=Simple
+
+#Edit this with your file name. In this example the app executable is in the /home/pi/myiotappfolder
+#The file we are running and made executable is <myiotapp>
+#ExecStart runs this executable script
+ExecStart=/home/gil/.dotnet/dotnet /home/gil/ApWifi/ApWifi.App.dll
+
+#Optional: Saves the output and error log of the terminal to a .log file in a directory of your choosing.
+StandardOutput=file:/home/gil/ApWifi/apwifi-app.log
+StandardError=file:/home/gil/ApWifi/apwifi-app-error.log
+
+#Optional: To cleanly end the file on stop use this command. This sends a terminal interrupt command on the executable script
+KillSignal=SIGINT
+
+#Automatically restart on kill
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

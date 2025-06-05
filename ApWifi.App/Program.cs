@@ -42,6 +42,10 @@ try
 
     GpioController? _gpioController;
 
+    // 5. 启动本地Web服务器（监听所有接口）
+    var serverUrl = $"http://0.0.0.0:{WebServerPort}";
+    var webHostTask = StartWebServer(serverUrl);
+
     DeviceConfig LoadConfig()
     {
         try
@@ -79,15 +83,8 @@ try
         var configUrl = $"http://{actualApIp}:{WebServerPort}";
         Log.Information("实际配网地址: {ConfigUrl}", configUrl);
 
-        // 5. 启动本地Web服务器（监听所有接口）
-        var serverUrl = $"http://0.0.0.0:{WebServerPort}";
-        var webHostTask = StartWebServer(serverUrl);
-
         // 6. 生成二维码并显示在屏幕（使用实际配网地址）
         await ShowQrCodeOnDisplayAsync(configUrl, actualApIp);
-
-        // 7. 等待Web配置完成
-        await webHostTask;
     }
     else
     {
@@ -105,6 +102,9 @@ try
             Log.Warning("无法获取WiFi连接的IP地址");
         }
     }
+
+    // 7. 等待Web配置完成
+    await webHostTask;
 
     async Task<string> StartAccessPointAsync(string ip)
     {
