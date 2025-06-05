@@ -5,7 +5,6 @@ using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using System;
 using System.Device.Gpio;
 using System.Device.Spi;
 using System.Runtime.InteropServices;
@@ -31,7 +30,7 @@ try
     // 默认AP热点IP
     const string DefaultApIp = "192.168.4.1";
     // 默认AP热点端口
-    const int WebServerPort = 5000;
+    const int WebServerPort = 5241;
 
     DeviceConfig config = LoadConfig();
     NetworkManager networkManager = new(config);
@@ -64,6 +63,11 @@ try
         }
     }
 
+    // 0. 进行启动延时，确保系统服务和网络接口准备就绪
+    Log.Information("启动延时10秒");
+
+    await Task.Delay(10_000);
+
     // 1. 检查网络连接
     Log.Information("开始检查网络连接状态");
     if (!await AsyncUtils.IsNetworkAvailableAsync())
@@ -89,7 +93,7 @@ try
     else
     {
         Log.Information("已连接到网络，无需配置");
-        
+
         // 获取设备当前连接的IP地址并显示到屏幕
         var connectedIp = Utils.GetWiFiConnectedIpAddress();
         if (!string.IsNullOrEmpty(connectedIp))
@@ -144,7 +148,8 @@ try
             Log.Error("AP热点启动失败");
             return ip; // 启动失败时返回预设IP作为备用
         }
-    }    async Task StartWebServer(string url)
+    }
+    async Task StartWebServer(string url)
     {
         Log.Information("正在启动Web服务器，监听地址: {Url}", url);
         builder.WebHost.UseUrls(url);
@@ -182,8 +187,8 @@ try
 
             var html = await fluidTemplate.RenderAsync(context);
             return Results.Content(html, "text/html");
-        }); 
-        
+        });
+
         app.MapPost("/config", async (HttpRequest req) =>
         {
             var form = await req.ReadFormAsync();
@@ -205,7 +210,9 @@ try
                 return Results.Content($"<html><body><h1>{errorTitle}</h1><p>{errorMessage}</p><a href='/'>{backLink}</a></body></html>", "text/html");
             }
 
-            await SaveWifiConfigAsync(ssid, pwd); var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
+            await SaveWifiConfigAsync(ssid, pwd); 
+            
+            var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
             var parser = new FluidParser();
 
             // 配置Fluid模型绑定，确保一致性
@@ -221,6 +228,7 @@ try
             context.SetValue("strings", localizationService.GetAllStrings());
 
             var html = await fluidTemplate.RenderAsync(context);
+
             _ = Task.Run(async () =>
             {
                 await Task.Delay(50000);
@@ -230,7 +238,8 @@ try
         });
 
         await app.RunAsync();
-    }    async Task SaveWifiConfigAsync(string ssid, string pwd)
+    }
+    async Task SaveWifiConfigAsync(string ssid, string pwd)
     {
         if (!OperatingSystem.IsLinux())
         {
@@ -248,7 +257,7 @@ try
         await networkManager.ConnectDeviceAsync();
 
         // 使用NetworkManager连接WiFi
-        var success = await networkManager.ConnectToWifiAsync(ssid, pwd);        
+        var success = await networkManager.ConnectToWifiAsync(ssid, pwd);
         if (success)
         {
             Log.Information("WiFi配置已保存并连接成功");
@@ -257,7 +266,8 @@ try
         {
             Log.Error("WiFi配置保存失败");
         }
-    }    
+    }
+
     async Task RebootAsync()
     {
         if (!OperatingSystem.IsLinux())
@@ -267,7 +277,7 @@ try
         }
         Log.Information("执行系统重启...");
         await AsyncUtils.RebootAsync();
-    }    
+    }
     async Task ShowQrCodeOnDisplayAsync(string url, string gatewayIp)
     {
         if (!OperatingSystem.IsLinux())
@@ -283,8 +293,8 @@ try
 
             //Utils.ShowQrCode(url);
             return;
-        }       
-        
+        }
+
         try
         {
             Log.Information("正在显示二维码到连接的屏幕...");
@@ -302,7 +312,8 @@ try
             catch
             {
                 hasDisplay = false;
-            }            if (!hasDisplay)
+            }
+            if (!hasDisplay)
             {
                 Log.Information("未检测到显示设备，仅生成二维码图片文件");
                 Utils.ShowQrCode(url);
@@ -321,7 +332,7 @@ try
             {
                 ClockFrequency = 24_000_000,
                 Mode = SpiMode.Mode0,
-            };            Log.Information("正在初始化2.4寸显示器...");
+            }; Log.Information("正在初始化2.4寸显示器...");
             _st7789Display24 = new ST7789Display(settings1, _gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
             Log.Information("2.4寸显示器初始化完成");
 
@@ -403,7 +414,7 @@ try
             {
                 ClockFrequency = 24_000_000,
                 Mode = SpiMode.Mode0,
-            };            Log.Information("正在初始化2.4寸显示器...");
+            }; Log.Information("正在初始化2.4寸显示器...");
             _st7789Display24 = new ST7789Display(settings1, _gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
             Log.Information("2.4寸显示器初始化完成");
 
@@ -442,7 +453,7 @@ try
                 {
                     _st7789Display47?.SendData(data2);
                 }
-            }            
+            }
             // 释放资源
             ipImage24.Dispose();
             ipImage47.Dispose();
