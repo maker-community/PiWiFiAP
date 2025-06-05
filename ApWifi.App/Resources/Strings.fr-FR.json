@@ -1,0 +1,17 @@
+{
+  "PageTitle": "Configuration WiFi Raspberry Pi",
+  "WifiConfiguration": "Configuration WiFi Raspberry Pi",
+  "WifiNameLabel": "Nom WiFi (SSID)",
+  "WifiNamePlaceholder": "Entrez le nom WiFi",
+  "WifiPasswordLabel": "Mot de passe WiFi",
+  "WifiPasswordPlaceholder": "Entrez le mot de passe WiFi",
+  "SaveAndRebootButton": "Sauvegarder et redémarrer",
+  "ConfigurationSuccessTitle": "Configuration WiFi réussie",
+  "ConfigurationSuccessMessage": "L'appareil redémarre et se connecte au réseau WiFi : <strong>{0}</strong>",
+  "RebootingMessage": "L'appareil se connectera automatiquement au réseau WiFi après le redémarrage",
+  "SystemRebooting": "Le système redémarre...",
+  "Error": "Erreur",
+  "WifiNameRequired": "Le nom WiFi ne peut pas être vide",
+  "BackLink": "Retour",
+  "LanguageSwitch": "Langue"
+}

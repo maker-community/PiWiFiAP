@@ -1,0 +1,17 @@
+{
+  "PageTitle": "树莓派 WiFi 配置",
+  "WifiConfiguration": "树莓派 WiFi 配置",
+  "WifiNameLabel": "WiFi 名称 (SSID)",
+  "WifiNamePlaceholder": "输入WiFi名称",
+  "WifiPasswordLabel": "WiFi 密码",
+  "WifiPasswordPlaceholder": "输入WiFi密码",
+  "SaveAndRebootButton": "保存并重启",
+  "ConfigurationSuccessTitle": "WiFi配置成功",
+  "ConfigurationSuccessMessage": "设备正在重启并连接到WiFi网络: <strong>{0}</strong>",
+  "RebootingMessage": "设备重启后将自动连接到WiFi网络",
+  "SystemRebooting": "系统正在重启中...",
+  "Error": "错误",
+  "WifiNameRequired": "WiFi名称不能为空",
+  "BackLink": "返回",
+  "LanguageSwitch": "语言"
+}

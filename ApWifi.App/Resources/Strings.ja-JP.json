@@ -1,0 +1,17 @@
+{
+  "PageTitle": "Raspberry Pi WiFi 設定",
+  "WifiConfiguration": "Raspberry Pi WiFi 設定",
+  "WifiNameLabel": "WiFi 名前 (SSID)",
+  "WifiNamePlaceholder": "WiFi名前を入力",
+  "WifiPasswordLabel": "WiFi パスワード",
+  "WifiPasswordPlaceholder": "WiFiパスワードを入力",
+  "SaveAndRebootButton": "保存して再起動",
+  "ConfigurationSuccessTitle": "WiFi設定成功",
+  "ConfigurationSuccessMessage": "デバイスが再起動してWiFiネットワークに接続中: <strong>{0}</strong>",
+  "RebootingMessage": "再起動後にWiFiネットワークに自動接続します",
+  "SystemRebooting": "システムが再起動中...",
+  "Error": "エラー",
+  "WifiNameRequired": "WiFi名前は必須です",
+  "BackLink": "戻る",
+  "LanguageSwitch": "言語"
+}
