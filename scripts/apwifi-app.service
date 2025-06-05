@@ -13,6 +13,9 @@ After=network.target
 #Default: Startup type
 Type=Simple
 
+#Set working directory to the application directory
+WorkingDirectory=/home/gil/ApWifi
+
 #Edit this with your file name. In this example the app executable is in the /home/pi/myiotappfolder
 #The file we are running and made executable is <myiotapp>
 #ExecStart runs this executable script
