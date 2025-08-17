@@ -36,11 +36,6 @@ try
     NetworkManager networkManager = new(config);
     LocalizationService localizationService = new();
 
-    ST7789Display? _st7789Display24;
-    ST7789Display? _st7789Display47;
-
-    GpioController? _gpioController;
-
     // 5. 启动本地Web服务器（监听所有接口）
     var serverUrl = $"http://0.0.0.0:{WebServerPort}";
     var webHostTask = StartWebServer(serverUrl);
@@ -107,8 +102,7 @@ try
         }
     }
 
-    // 7. 等待Web配置完成
-    await webHostTask;
+    await webHostTask; // 现在等待Web服务器，但屏幕资源已释放
 
     async Task<string> StartAccessPointAsync(string ip)
     {
@@ -208,8 +202,8 @@ try
                 var errorTitle = localizationService.GetString("Error");
                 var backLink = localizationService.GetString("BackLink");
                 return Results.Content($"<html><body><h1>{errorTitle}</h1><p>{errorMessage}</p><a href='/'>{backLink}</a></body></html>", "text/html");
-            }            
-            
+            }
+
             var template = await File.ReadAllTextAsync("Templates/wifi_success.liquid");
             var parser = new FluidParser();
 
@@ -229,7 +223,7 @@ try
 
             _ = Task.Run(async () =>
             {
-                await SaveWifiConfigAsync(ssid, pwd); 
+                await SaveWifiConfigAsync(ssid, pwd);
                 await Task.Delay(10_000);
                 await RebootAsync();
             });
@@ -319,7 +313,8 @@ try
                 return;
             }
 
-            _gpioController = new GpioController();
+            // 使用局部变量以便在方法结束时自动释放
+            using var gpioController = new GpioController();
 
             var settings1 = new SpiConnectionSettings(0, 0)
             {
@@ -331,15 +326,19 @@ try
             {
                 ClockFrequency = 24_000_000,
                 Mode = SpiMode.Mode0,
-            }; Log.Information("正在初始化2.4寸显示器...");
-            _st7789Display24 = new ST7789Display(settings1, _gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
+            };
+
+            Log.Information("正在初始化2.4寸显示器...");
+            using var st7789Display24 = new ST7789Display(settings1, gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
             Log.Information("2.4寸显示器初始化完成");
 
             Log.Information("正在初始化1.47寸显示器...");
-            _st7789Display47 = new ST7789Display(settings2, _gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
-            Log.Information("1.47寸显示器初始化完成");// 清屏以准备播放动画 不清屏是不能写入数据的
-            _st7789Display24.FillScreen(0x0000);  // 黑色
-            _st7789Display47.FillScreen(0x0000);  // 黑色
+            using var st7789Display47 = new ST7789Display(settings2, gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
+            Log.Information("1.47寸显示器初始化完成");
+
+            // 清屏以准备播放动画 不清屏是不能写入数据的
+            st7789Display24.FillScreen(0x0000);  // 黑色
+            st7789Display47.FillScreen(0x0000);  // 黑色
 
             // 使用传入的网关IP作为显示IP
             Log.Information("在屏幕上显示配网地址: {Url}", url);
@@ -356,11 +355,11 @@ try
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 converted2inch4Image.Mutate(x => x.Rotate(90));
-                var data1 = _st7789Display24?.GetImageBytes(converted2inch4Image);
+                var data1 = st7789Display24?.GetImageBytes(converted2inch4Image);
 
                 if (data1 != null)
                 {
-                    _st7789Display24?.SendData(data1);
+                    st7789Display24?.SendData(data1);
                 }
 
                 await Task.Delay(5); // 短暂延时确保传输完成
@@ -371,16 +370,22 @@ try
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 converted1inch47Image.Mutate(x => x.Rotate(90));
-                var data2 = _st7789Display47?.GetImageBytes(converted1inch47Image);
+                var data2 = st7789Display47?.GetImageBytes(converted1inch47Image);
                 if (data2 != null)
                 {
-                    _st7789Display47?.SendData(data2);
+                    st7789Display47?.SendData(data2);
                 }
-            }            // 释放资源
+            }
+
+            // 释放图像资源
             qrImage24.Dispose();
-            qrImage47.Dispose(); Log.Information("请访问 {Url} 配置WiFi", url);
+            qrImage47.Dispose();
+
+            Log.Information("请访问 {Url} 配置WiFi", url);
             Log.Information("或直接访问网关IP: {GatewayIp}:{Port}", gatewayIp, WebServerPort);
             Log.Information("或扫描屏幕上的二维码连接配置网页");
+
+            // 显示完成后，using语句将自动释放 gpioController、st7789Display24 和 st7789Display47 资源
         }
         catch (Exception ex)
         {
@@ -401,7 +406,8 @@ try
         {
             Log.Information("正在显示连接的IP地址到屏幕: {IpAddress}", ipAddress);
 
-            _gpioController = new GpioController();
+            // 使用局部变量以便在方法结束时自动释放
+            using var gpioController = new GpioController();
 
             var settings1 = new SpiConnectionSettings(0, 0)
             {
@@ -413,15 +419,19 @@ try
             {
                 ClockFrequency = 24_000_000,
                 Mode = SpiMode.Mode0,
-            }; Log.Information("正在初始化2.4寸显示器...");
-            _st7789Display24 = new ST7789Display(settings1, _gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
+            };
+
+            Log.Information("正在初始化2.4寸显示器...");
+            using var st7789Display24 = new ST7789Display(settings1, gpioController, true, dcPin: 25, resetPin: 27, displayType: DisplayType.Display24Inch);
             Log.Information("2.4寸显示器初始化完成");
 
             Log.Information("正在初始化1.47寸显示器...");
-            _st7789Display47 = new ST7789Display(settings2, _gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
-            Log.Information("1.47寸显示器初始化完成");// 清屏
-            _st7789Display24.FillScreen(0x0000);  // 黑色
-            _st7789Display47.FillScreen(0x0000);  // 黑色            
+            using var st7789Display47 = new ST7789Display(settings2, gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
+            Log.Information("1.47寸显示器初始化完成");
+
+            // 清屏
+            st7789Display24.FillScreen(0x0000);  // 黑色
+            st7789Display47.FillScreen(0x0000);  // 黑色            
             // 显示IP地址
             Log.Information("在屏幕上显示IP地址: {IpAddress}", ipAddress);
 
@@ -437,25 +447,28 @@ try
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 convertedIpImage24.Mutate(x => x.Rotate(90));
-                var data1 = _st7789Display24?.GetImageBytes(convertedIpImage24);
+                var data1 = st7789Display24?.GetImageBytes(convertedIpImage24);
 
                 if (data1 != null)
                 {
-                    _st7789Display24?.SendData(data1);
+                    st7789Display24?.SendData(data1);
                 }
 
                 await Task.Delay(5); // 短暂延时确保传输完成
 
                 convertedIpImage47.Mutate(x => x.Rotate(90));
-                var data2 = _st7789Display47?.GetImageBytes(convertedIpImage47);
+                var data2 = st7789Display47?.GetImageBytes(convertedIpImage47);
                 if (data2 != null)
                 {
-                    _st7789Display47?.SendData(data2);
+                    st7789Display47?.SendData(data2);
                 }
             }
-            // 释放资源
+
+            // 释放图像资源
             ipImage24.Dispose();
             ipImage47.Dispose();
+
+            // 显示完成后，using语句将自动释放 gpioController、st7789Display24 和 st7789Display47 资源
         }
         catch (Exception ex)
         {
