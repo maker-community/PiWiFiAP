@@ -2,9 +2,6 @@ using ApWifi.App;
 using ApWifi.App.Services;
 using Fluid;
 using Serilog;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using System.Device.Gpio;
 using System.Device.Spi;
 using System.Runtime.InteropServices;
@@ -276,15 +273,12 @@ try
         if (!OperatingSystem.IsLinux())
         {
             Log.Information("非Linux系统，跳过二维码显示，仅生成二维码图片");
-            var qrcodeImage = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 400, 400);
-            // 保存生成的二维码图片到本地文件
-            var qrCodeFilePath = Path.Combine(Directory.GetCurrentDirectory(), "qrcode.png");
-            qrcodeImage.Save(qrCodeFilePath);
-            Log.Information("二维码图片已保存到: {FilePath}", qrCodeFilePath);
+
+            // 直接使用Utils.ShowQrCode生成并保存二维码图片
+            Utils.ShowQrCode(url);
+
             Log.Information("配网地址: {Url}", url);
             Log.Information("网关IP: {GatewayIp}", gatewayIp);
-
-            //Utils.ShowQrCode(url);
             return;
         }
 
@@ -333,7 +327,7 @@ try
             Log.Information("2.4寸显示器初始化完成");
 
             Log.Information("正在初始化1.47寸显示器...");
-            using var st7789Display47 = new ST7789Display(settings2, gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
+            using var st7789Display47 = new ST7789Display(settings2, gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch, isLandscape: true);
             Log.Information("1.47寸显示器初始化完成");
 
             // 清屏以准备播放动画 不清屏是不能写入数据的
@@ -345,41 +339,27 @@ try
             Log.Information("网关IP: {GatewayIp}", gatewayIp);
 
             // 为2.4寸屏幕(240x320)生成带文本的二维码图像（横屏模式：320x240）
-            var qrImage24 = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 320, 240);
+            var qrImage24Data = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 320, 240);
 
             // 为1.47寸屏幕(172x320)生成带文本的二维码图像（横屏模式：320x172）
-            var qrImage47 = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 320, 172);
-
-            using Image<Bgr24> converted2inch4Image = qrImage24.CloneAs<Bgr24>();
+            var qrImage47Data = Utils.CreateQrCodeWithTextImage(url, $"IP: {gatewayIp}", 320, 172);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                converted2inch4Image.Mutate(x => x.Rotate(90));
-                var data1 = st7789Display24?.GetImageBytes(converted2inch4Image);
-
-                if (data1 != null)
+                // 直接发送RGB565数据到2.4寸屏幕
+                if (qrImage24Data != null && qrImage24Data.Length > 0)
                 {
-                    st7789Display24?.SendData(data1);
+                    st7789Display24?.SendData(qrImage24Data);
                 }
 
                 await Task.Delay(5); // 短暂延时确保传输完成
-            }
 
-            using Image<Bgr24> converted1inch47Image = qrImage47.CloneAs<Bgr24>();
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                converted1inch47Image.Mutate(x => x.Rotate(90));
-                var data2 = st7789Display47?.GetImageBytes(converted1inch47Image);
-                if (data2 != null)
+                // 直接发送RGB565数据到1.47寸屏幕
+                if (qrImage47Data != null && qrImage47Data.Length > 0)
                 {
-                    st7789Display47?.SendData(data2);
+                    st7789Display47?.SendData(qrImage47Data);
                 }
             }
-
-            // 释放图像资源
-            qrImage24.Dispose();
-            qrImage47.Dispose();
 
             Log.Information("请访问 {Url} 配置WiFi", url);
             Log.Information("或直接访问网关IP: {GatewayIp}:{Port}", gatewayIp, WebServerPort);
@@ -426,7 +406,7 @@ try
             Log.Information("2.4寸显示器初始化完成");
 
             Log.Information("正在初始化1.47寸显示器...");
-            using var st7789Display47 = new ST7789Display(settings2, gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch);
+            using var st7789Display47 = new ST7789Display(settings2, gpioController, false, dcPin: 25, resetPin: 27, displayType: DisplayType.Display147Inch, isLandscape: true);
             Log.Information("1.47寸显示器初始化完成");
 
             // 清屏
@@ -436,37 +416,27 @@ try
             Log.Information("在屏幕上显示IP地址: {IpAddress}", ipAddress);
 
             // 为2.4寸屏幕(240x320)生成IP地址显示图像（横屏模式：320x240）
-            var ipImage24 = Utils.CreateIpDisplayImage(ipAddress, 320, 240);
+            var ipImage24Data = Utils.CreateIpDisplayImage(ipAddress, 320, 240);
 
             // 为1.47寸屏幕(172x320)生成IP地址显示图像（横屏模式：320x172）
-            var ipImage47 = Utils.CreateIpDisplayImage(ipAddress, 320, 172);
-
-            using Image<Bgr24> convertedIpImage24 = ipImage24.CloneAs<Bgr24>();
-            using Image<Bgr24> convertedIpImage47 = ipImage47.CloneAs<Bgr24>();
+            var ipImage47Data = Utils.CreateIpDisplayImage(ipAddress, 320, 172);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                convertedIpImage24.Mutate(x => x.Rotate(90));
-                var data1 = st7789Display24?.GetImageBytes(convertedIpImage24);
-
-                if (data1 != null)
+                // 直接发送RGB565数据到2.4寸屏幕
+                if (ipImage24Data != null && ipImage24Data.Length > 0)
                 {
-                    st7789Display24?.SendData(data1);
+                    st7789Display24?.SendData(ipImage24Data);
                 }
 
                 await Task.Delay(5); // 短暂延时确保传输完成
 
-                convertedIpImage47.Mutate(x => x.Rotate(90));
-                var data2 = st7789Display47?.GetImageBytes(convertedIpImage47);
-                if (data2 != null)
+                // 直接发送RGB565数据到1.47寸屏幕
+                if (ipImage47Data != null && ipImage47Data.Length > 0)
                 {
-                    st7789Display47?.SendData(data2);
+                    st7789Display47?.SendData(ipImage47Data);
                 }
             }
-
-            // 释放图像资源
-            ipImage24.Dispose();
-            ipImage47.Dispose();
 
             // 显示完成后，using语句将自动释放 gpioController、st7789Display24 和 st7789Display47 资源
         }
