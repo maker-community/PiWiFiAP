@@ -2,10 +2,10 @@
 
 # 🌐 ApWifi
 
-**Smart WiFi Configuration for Raspberry Pi 5**
+**Smart WiFi Configuration for Raspberry Pi**
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-5-C51A4A?style=for-the-badge&logo=raspberry-pi)](https://www.raspberrypi.org/)
+[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
+[![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Compatible-C51A4A?style=for-the-badge&logo=raspberry-pi)](https://www.raspberrypi.org/)
 [![License](https://img.shields.io/github/license/maker-community/PiWiFiAP?style=for-the-badge)](LICENSE.txt)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](README.md)
 
@@ -19,7 +19,9 @@
 
 ## 🚀 Quick Start
 
-ApWifi is a robust .NET 8 solution designed for Raspberry Pi 5 that transforms WiFi configuration into a seamless experience. When your device is offline, it automatically creates an access point named **"RaspberryPi5-WiFiSetup"**, displays an interactive QR code on your SPI screen, and serves a beautiful web interface for WiFi setup.
+ApWifi is a robust .NET 9 solution designed for Raspberry Pi devices that transforms WiFi configuration into a seamless experience. When your device is offline, it automatically creates an access point named **"RaspberryPi5-WiFiSetup"**, displays an interactive QR code on your SPI screen, and serves a beautiful web interface for WiFi setup.
+
+*Tested on Raspberry Pi 5, compatible with other Raspberry Pi models*
 
 ### ✨ Key Benefits
 - 🔄 **Zero-touch setup** - Automatic fallback to AP mode when offline
@@ -162,7 +164,7 @@ graph TD
 <div align="center">
 
 ### 💻 Core Technologies
-![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet)
 ![C#](https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp)
 ![SkiaSharp](https://img.shields.io/badge/SkiaSharp-Graphics-FF6B35?style=flat-square)
 ![IoT](https://img.shields.io/badge/.NET%20IoT-Hardware-5C2D91?style=flat-square)
@@ -173,15 +175,17 @@ graph TD
 
 | Component | Specification | Status |
 |-----------|--------------|--------|
-| **Platform** | Raspberry Pi 5 | ✅ Tested |
+| **Platform** | Raspberry Pi (all models) | ✅ Compatible |
+| **Tested On** | Raspberry Pi 5 | ✅ Verified |
 | **OS** | Raspberry Pi OS (64-bit) | ✅ Verified |
-| **Runtime** | .NET 8 SDK | ✅ Required |
+| **Runtime** | .NET 9 SDK | ✅ Required |
 | **Display** | SPI-connected screen | ✅ Supported |
 | **Libraries** | .NET IoT + SkiaSharp | ✅ Included |
 | **Permissions** | Root access for network ops | ⚠️ Required |
 
 ### 🧪 Tested Environment
-- **Hardware**: Raspberry Pi 5 (ARM64)
+- **Primary Hardware**: Raspberry Pi 5 (ARM64)
+- **Compatibility**: All Raspberry Pi models with compatible OS
 - **Operating System**: Raspberry Pi OS 64-bit
 - **Display**: SPI-connected screen with .NET IoT drivers
 - **Graphics**: SkiaSharp rendering engine
