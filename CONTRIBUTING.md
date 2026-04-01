@@ -87,7 +87,7 @@ Help others use and contribute to ApWifi!
 ## 🔧 Development Setup
 
 ### Prerequisites
-- .NET 8 SDK
+- .NET 10 SDK
 - Git
 - (Optional) Raspberry Pi 5 for hardware testing
 

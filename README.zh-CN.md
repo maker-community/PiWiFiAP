@@ -4,7 +4,7 @@
 
 **树莓派智能WiFi配置解决方案**
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-兼容-C51A4A?style=for-the-badge&logo=raspberry-pi)](https://www.raspberrypi.org/)
 [![License](https://img.shields.io/github/license/maker-community/PiWiFiAP?style=for-the-badge)](LICENSE.txt)
 [![Status](https://img.shields.io/badge/状态-生产就绪-success?style=for-the-badge)](README.zh-CN.md)
@@ -19,7 +19,7 @@
 
 ## 🚀 快速开始
 
-ApWifi是为树莓派设备设计的强大.NET 9解决方案，将WiFi配置转化为无缝体验。当设备离线时，自动创建名为**"RaspberryPi5-WiFiSetup"**的接入点，在SPI屏幕上显示交互式二维码，并提供精美的Web界面进行WiFi设置。
+ApWifi是为树莓派设备设计的强大.NET 10解决方案，将WiFi配置转化为无缝体验。当设备离线时，自动创建名为**"RaspberryPi5-WiFiSetup"**的接入点，在SPI屏幕上显示交互式二维码，并提供精美的Web界面进行WiFi设置。
 
 *在树莓派5上测试，兼容其他树莓派型号*
 
@@ -164,7 +164,7 @@ graph TD
 <div align="center">
 
 ### 💻 核心技术
-![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)
 ![C#](https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp)
 ![SkiaSharp](https://img.shields.io/badge/SkiaSharp-图形处理-FF6B35?style=flat-square)
 ![IoT](https://img.shields.io/badge/.NET%20IoT-硬件控制-5C2D91?style=flat-square)
@@ -178,7 +178,7 @@ graph TD
 | **平台** | 树莓派（所有型号） | ✅ 兼容 |
 | **测试平台** | 树莓派5 | ✅ 已验证 |
 | **操作系统** | 树莓派OS（64位） | ✅ 已验证 |
-| **运行时** | .NET 9 SDK | ✅ 必需 |
+| **运行时** | .NET 10 SDK | ✅ 必需 |
 | **显示器** | SPI连接屏幕 | ✅ 支持 |
 | **类库** | .NET IoT + SkiaSharp | ✅ 已包含 |
 | **权限** | 网络操作需root访问 | ⚠️ 必需 |

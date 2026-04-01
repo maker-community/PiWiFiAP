@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Languages**: All supported language interfaces
 
 ### Technical Stack
-- .NET 8 runtime
+- .NET 10 runtime
 - SkiaSharp for graphics rendering
 - .NET IoT libraries for hardware control
 - Liquid templating for configuration
